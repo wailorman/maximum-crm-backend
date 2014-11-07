@@ -13,4 +13,4 @@ var lessonSchema = new Schema({
 },{
     collection: 'lessons'
 });
-module.exports.Lesson = mongoose.model('Lesson', lessonSchema);;
+module.exports.Lesson = mongoose.model('LessonModel', lessonSchema);;

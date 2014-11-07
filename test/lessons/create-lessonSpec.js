@@ -1,4 +1,4 @@
 var assert = require("assert");
-describe('Create Lesson testing', function(){
+describe('Create LessonModel testing', function(){
 
 });
