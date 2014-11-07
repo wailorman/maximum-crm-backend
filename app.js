@@ -5,6 +5,9 @@ var mongoose = require('mongoose');
 
 mongoose.connect('mongodb://maximum-crm:75FzSCK@gefest.wailorman.ru:27017/maximum-crm');
 
+    server.use(restify.queryParser());
+    server.use(restify.bodyParser());
+
     //   LESSONS
 
     // Get all lessons
@@ -21,6 +24,8 @@ mongoose.connect('mongodb://maximum-crm:75FzSCK@gefest.wailorman.ru:27017/maximu
 
     // Create lesson
     server.post('/lessons', lessons.create);
+
+    //server.post('/lessonsss', lessons.newPost);
 
 server.listen(8080, function () {
     console.log('Maximum CRM REST API server started on port 8080');

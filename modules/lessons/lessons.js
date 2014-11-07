@@ -1,5 +1,8 @@
 var restify = require('restify');
 var createLesson = require('./create-lesson.js');
+var ObjectID = require('../../libs/mini-funcs.js').ObjectID;
+var is = require('../../libs/mini-funcs.js').is;
+
 
 var lol = "1";
 
@@ -20,19 +23,39 @@ module.exports = {
         return next();
     },
     remove: function (req, res, next) {
-        res.send({lol: "remove"});
+        res.send(req.params);
         return next();
     },
+    /*newPost: function (req, res, next) {
+        res.send(req.params);
+        return next();
+    },*/
     create: function (req, res, next) {
+
+        // is time.start not number
+        if ( !is(req.params.time.start).number || !is(req.params.time.end).number) { return next(new restify.InvalidArgumentError('time')); }
+
+        // is hall string looks like 24-byte hex code (Mongo ObjectId)
+        if ( !is(req.params.hall).ObjectID ) { return next(new restify.InvalidArgumentError('hall')); }
+        if ( !is(req.params.coach).ObjectID ) { return next(new restify.InvalidArgumentError('coach')); }
+        if ( !is(req.params.group).ObjectID ) { return next(new restify.InvalidArgumentError('group')); }
+
+
+        var startTime = new Date( parseInt(req.params.time.start) );
+        var endTime = new Date( parseInt(req.params.time.end) );
+        var hallObjectId = new ObjectID(req.params.hall);
+        var coachObjectId = new ObjectID(req.params.coach);
+        var groupObjectId = new ObjectID(req.params.group);
+        
 
         createLesson({
                 time: {
-                    start: req.params.time.start,
-                    end: req.params.time.end
+                    start: startTime,
+                    end: endTime
                 },
-                hall: req.params.hall,
-                coach: req.params.coach,
-                group: req.params.group
+                hall: hallObjectId,
+                coach: coachObjectId,
+                group: groupObjectId
             },
             function (err, result) {
                 if (err) return next(err);
