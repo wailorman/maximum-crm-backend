@@ -1,19 +1,37 @@
+//var ObjectId = require('mongodb').ObjectID;
+var ObjectId = require('mongoose').Types.ObjectId;
 
 module.exports.is = function(variable){
     var isVariable = {};
 
-    var isObjectIDRegExp = new RegExp("^[0-9a-fA-F]{24}$");
-    isVariable.ObjectID = isObjectIDRegExp.test(variable);
-    isVariable.ObjectId = isVariable.ObjectID;
+    var isObjectIdRegExp = new RegExp("^[0-9a-fA-F]{24}$");
+    isVariable.stringObjectId = isObjectIdRegExp.test(variable);
+    isVariable.ObjectId =   variable.hasOwnProperty('toString') &&
+                            variable.toString().match(/^[0-9a-fA-F]{24}$/);
 
-    isVariable.number = typeof variable == 'number';
+    var isVariableStringNumber = new RegExp("^[0-9]");
+    //isVariable.number = typeof variable == 'number';
+    isVariable.stringNumber = isVariableStringNumber.test(variable);
     isVariable.Date = variable instanceof Date;
-    isVariable.null = typeof variable == 'null';
+
+    isVariable.null =   typeof variable === 'object' &&
+                        typeof variable !== 'boolean' &&
+                        (!variable === true);
+
+    // some magic checking for null variable
+    isVariable.object = typeof variable === 'object' &&
+                        typeof variable !== 'boolean' &&
+                        (!variable !== true);
+
     isVariable.undefined = typeof variable == 'undefined';
-    isVariable.object = typeof variable == 'object';
+
+
+    isVariable.string = typeof variable != 'undefined' && typeof variable != 'null' &&
+                        typeof variable === 'string';
+    isVariable.number = typeof variable == 'number';
 
 
     return isVariable;
 };
 
-module.exports.ObjectID = require('mongodb').ObjectID;
+module.exports.ObjectId = ObjectId;
