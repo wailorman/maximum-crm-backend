@@ -6,7 +6,9 @@ module.exports.is = function(variable){
 
     var isObjectIdRegExp = new RegExp("^[0-9a-fA-F]{24}$");
     isVariable.stringObjectId = isObjectIdRegExp.test(variable);
-    isVariable.ObjectId =   variable.hasOwnProperty('toString') &&
+    isVariable.ObjectId =   typeof variable !== 'boolean' &&
+                            (!variable !== true) &&  // not null
+                            variable.hasOwnProperty('toString') &&
                             variable.toString().match(/^[0-9a-fA-F]{24}$/);
 
     var isVariableStringNumber = new RegExp("^[0-9]");

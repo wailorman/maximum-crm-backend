@@ -16,29 +16,13 @@ var HallModel = require('./hall-model.js').HallModel;
  *
  * */
 
-module.exports.mHall = {
-    create: function (data, next) {
-        if (!is(data).object) next(new restify.InvalidArgumentError("data argument is not object"));
-        if (!is(data.name).string) next(new restify.InvalidArgumentError("argument name was not passed"));
 
-        var Hall = new HallModel(data);
-        Hall.save(next);
-
-        //return true;
-
-        /*HallModel.create(data, function (err, doc) {
-            if (err) next(err);
-
-            next(null, doc); // passing Hall(this) object as newHall object
-        });*/
-    }
-};
 module.exports.Hall = function () {
 
     var Hall = this;
 
     this.create = function (data, next) {
-        if (!is(data).object) return next(new restify.InvalidArgumentError("data argument is not object"));
+        if (!is(data).object || !data) return next(new restify.InvalidArgumentError("data argument is not object"));
         if (!data.hasOwnProperty('name')) return next(new restify.InvalidArgumentError("argument name was not passed"));
         if (!is(data.name).string) return next(new restify.InvalidArgumentError("argument name is not string"));
 
@@ -47,7 +31,7 @@ module.exports.Hall = function () {
         HallModel.create(data, function (err, doc) {
             if (err) next(err);
 
-            Hall.id = doc._id;
+            Hall.id = ObjectId(doc._id);
             Hall.name = doc.name;
 
             next(null, doc); // passing Hall(this) object as newHall object
