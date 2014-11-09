@@ -1,51 +1,50 @@
 var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
 var restify = require('restify');
 var ObjectId = require('mongoose').Types.ObjectId;
 var is = require('../libs/mini-funcs.js').is;
-var HallModel = require('./../models/hall-model.js').HallModel;
-
-/*
- *
- * {
- *   _id: ObjectId(),
- *   name: "...",
- *   save()
- *   remove()
- * }
- *
- * */
+var HallModel = require('./../models/all.js').HallModel;
 
 
-
-
-module.exports = {
+var Hall = {
 
 
     create: function (data, next) {
-        if (!is(data).object || !data) return next(new restify.InvalidArgumentError("data argument is not object"));
-        if (!data.hasOwnProperty('name')) return next(new restify.InvalidArgumentError("argument name was not passed"));
-        if (!is(data.name).string) return next(new restify.InvalidArgumentError("argument name is not string"));
+        if (is(data).not.object || !data)
+            return next(new restify.InvalidArgumentError("argument data is not object"));
 
-        HallModel.create(data, function (err, doc) {
-            if (err) return next(err);
+        if (is(data.name).undefined)
+            return next(new restify.InvalidArgumentError("argument name was not passed"));
 
-            next(null, {
-                id: doc._id.toString(),
-                name: doc.name
+        if (is(data.name).not.string || !data.name) // check for empty string data.name
+            return next(new restify.InvalidArgumentError("argument name is not string"));
+
+
+        HallModel.findOne({name: data.name}, function(err, doc) {
+            if (!is(doc).null)
+                return next(new restify.InvalidArgumentError('hall with the same name is already exists'));
+
+            HallModel.create(data, function (err, doc) {
+                if (err) return next(err);
+
+                next(null, {
+                    id: doc._id.toString(),
+                    name: doc.name
+                });
             });
         });
     },
 
 
-    getById: function (searchingId, next) {
-        if (!is(searchingId).stringObjectId) return next(new restify.InvalidArgumentError("Hall.getById: searchingId is not ObjectId"));
+    getById: function (id, next) {
+        if (is(id).not.stringObjectId)
+            return next(new restify.InvalidArgumentError("Hall.getById: searchingId is not ObjectId"));
 
-        HallModel.findOne({_id: ObjectId(searchingId)}, function (err, doc) {
+
+        HallModel.findOne({_id: ObjectId(id)}, function (err, doc) {
             if (err) return next(err);
 
             // if no matches
-            if ( is(doc).null ) return next( new restify.InvalidContentError('can not find hall') );
+            if (is(doc).null) return next(new restify.InvalidContentError('can not find hall'));
 
             next(null, {
                 id: doc._id.toString(),
@@ -54,60 +53,50 @@ module.exports = {
         });
     },
 
+    update: function (id, data, next) {
+        if (is(id).not.stringObjectId || !id)
+            return next(new restify.InvalidArgumentError('id argument is not stringObjectId'));
 
-    remove: function (searchingId, next) {
-        if (!is(searchingId).stringObjectId) return next(new restify.InvalidArgumentError("Hall.remove: searchingId is not ObjectId"));
+        if (is(data).not.object || !data)
+            return next(new restify.InvalidArgumentError('data argument is not object'));
 
-        HallModel.findOneAndRemove({ _id: searchingId }, function (err) {
+        if (is(data.name).undefined)
+            return next(new restify.InvalidArgumentError('data argument: property name is not found'));
+
+        if (is(data.name).not.string)
+            return next(new restify.InvalidArgumentError('data.name argument is not string'));
+
+
+        HallModel.findOne({_id: ObjectId(id)}, function (err, doc) {
+
+            doc.name = data.name;
+
+            if (is(doc).null) return next(new restify.InvalidContentError('can not find hall'));
+
+            doc.save(function (err, doc) {
+                if (err) return next(err);
+
+                next(null, {
+                    id: doc._id.toString(),
+                    name: doc.name
+                });
+            });
+        });
+    },
+
+    remove: function (id, next) {
+        if (is(id).not.stringObjectId)
+            return next(new restify.InvalidArgumentError("Hall.remove: searchingId is not ObjectId"));
+
+
+        HallModel.findOneAndRemove({_id: ObjectId(id)}, function (err, doc) {
             if (err) return next(err);
+            if (is(doc).null) return next(new restify.InvalidContentError('nobody to remove'));
 
             next();
         });
+
     }
 };
-/*
-module.exports.Hall = function () {
 
-    var Hall = this;
-
-    this.create = function (data, next) {
-        if (!is(data).object || !data) return next(new restify.InvalidArgumentError("data argument is not object"));
-        if (!data.hasOwnProperty('name')) return next(new restify.InvalidArgumentError("argument name was not passed"));
-        if (!is(data.name).string) return next(new restify.InvalidArgumentError("argument name is not string"));
-
-        // {name: "lol"}
-
-        HallModel.create(data, function (err, doc) {
-            if (err) next(err);
-
-            Hall.id = doc._id.toString();
-            Hall.name = doc.name;
-
-            next(null, Hall); // passing Hall(this) object as newHall object
-        });
-    };
-
-    this.getById = function (searchingId, next) {
-        if (!is(searchingId).stringObjectId) return next(new restify.InvalidArgumentError("Hall.getById: searchingId is not ObjectId"));
-
-        HallModel.findOne({_id: ObjectId(searchingId)}, function (err, doc) {
-            if (err) next(err);
-
-            Hall.id = doc._id;
-            Hall.name = doc.name;
-
-            next(null, Hall);
-        });
-    };
-
-    this.remove = function (searchingId, next) {
-        if (!is(searchingId).ObjectId) return next(new restify.InvalidArgumentError("Hall.remove: searchingId is not ObjectId"));
-
-        HallModel.findOneAndRemove({ _id: searchingId }, function (err) {
-            if (err) next(err);
-
-            next();
-        });
-    };
-
-};*/
+module.exports = Hall;

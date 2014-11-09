@@ -128,8 +128,10 @@ describe('Testing is() statements', function () {
     it('should detect undefined', function (done) {
         var variable;
         var isVariable = is(variable);
+        var someObject = {foo: 'bar'};
 
         isVariable.undefined.should.eql(true);
+        is(someObject.baz).undefined.should.eql(true);
 
         isVariable.string.should.eql(false);
         isVariable.Date.should.eql(false);
@@ -144,7 +146,6 @@ describe('Testing is() statements', function () {
         is(false).undefined.should.eql(false);
         is({}).undefined.should.eql(false);
         is(null).undefined.should.eql(false);
-
         done();
     });
 

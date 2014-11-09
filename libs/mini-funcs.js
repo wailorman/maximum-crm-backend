@@ -36,14 +36,36 @@ module.exports.is = function(variable){
     isVariable.undefined =      typeof variable == 'undefined';
 
 
-    isVariable.string =         typeof variable != 'undefined' &&
+    isVariable.string =         typeof variable !== 'undefined' &&
                                 typeof variable === 'string';
 
     isVariable.number =         typeof variable == 'number';
 
     isVariable.boolean =        typeof variable == 'boolean';
 
-    return isVariable;
+    return {
+        stringObjectId:     isVariable.stringObjectId,
+        stringNumber:       isVariable.stringNumber,
+        Date:               isVariable.Date,
+        null:               isVariable.null,
+        object:             isVariable.object,
+        undefined:          isVariable.undefined,
+        string:             isVariable.string,
+        number:             isVariable.number,
+        boolean:            isVariable.boolean,
+
+        not: {
+            stringObjectId:     ! isVariable.stringObjectId,
+            stringNumber:       ! isVariable.stringNumber,
+            Date:               ! isVariable.Date,
+            null:               ! isVariable.null,
+            object:             ! isVariable.object,
+            undefined:          ! isVariable.undefined,
+            string:             ! isVariable.string,
+            number:             ! isVariable.number,
+            boolean:            ! isVariable.boolean
+        }
+    };
 };
 
 module.exports.ObjectId = ObjectId;
