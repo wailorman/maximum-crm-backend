@@ -1,7 +1,7 @@
 var restify = require('restify');
-var createLesson = require('./create-lesson.js');
-var ObjectId = require('../../libs/mini-funcs.js').ObjectId;
-var is = require('../../libs/mini-funcs.js').is;
+var createLesson = require('./lessons/create-lesson.js');
+var ObjectId = require('../libs/mini-funcs.js').ObjectId;
+var is = require('../libs/mini-funcs.js').is;
 
 var lol = "1";
 

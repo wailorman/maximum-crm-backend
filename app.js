@@ -1,6 +1,6 @@
 var restify = require('restify');
 var server = restify.createServer();
-var lessons = require('./modules/lessons/lessons.js');
+var lessons = require('./modules/lessons.js');
 var mongoose = require('mongoose');
 
 mongoose.connect('mongodb://maximum-crm:75FzSCK@gefest.wailorman.ru:27017/maximum-crm');
