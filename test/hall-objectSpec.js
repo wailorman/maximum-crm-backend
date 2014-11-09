@@ -34,11 +34,8 @@ describe('Hall object', function () {
 
                     doc.should.have.property('name');
                     doc.should.have.property('id');
-                    //newHall.should.have.property('name');
-                    //newHall.should.have.property('id');
 
                     doc.name.should.equal('Foo');
-                    //newHall.name.should.equal('Foo');
 
                     done();
                 }
@@ -57,12 +54,12 @@ describe('Hall object', function () {
                 100,
                 function () {
                 },
-                ""
+                "",
+                {notName: "some string"},
+                ["1", {name: "lol. lets try"}]
             ];
 
             for (var i in incorrectDataTypes) {
-
-                //newHall = new Hall;
 
                 Hall.create(
                     incorrectDataTypes[i],
@@ -81,7 +78,6 @@ describe('Hall object', function () {
 
         it('should find created hall by id', function (done) {
 
-            //var createdHall = new Hall;
             Hall.create({name: 'Bar'},
                 function (err, createdHall) {
                     should.not.exist(err);
