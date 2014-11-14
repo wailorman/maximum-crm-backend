@@ -2,96 +2,179 @@ var should = require('should');
 var mongoose = require('mongoose');
 var async = require('async');
 
-var AccountGroup =  require('../../../modules/AccountGroup.js');
+var AccountGroup =  require('../../../modules/account-group/account-group.js');
 
 var theNewAccountGroup;
 
 describe('AccountGroup module testing', function () {
 
-    before(function () {
-        mongoose.connect('mongodb://maximum-crm-test:qwerty155@gefest.wailorman.ru:27017/maximum-crm-test');
+    before(function (done) {
+
+        // Connecting to mongoose test database
+
+        mongoose.connect('mongodb://maximum-crm-test:qwerty155@gefest.wailorman.ru:27017/maximum-crm-test', {},
+            function (err) {
+                should.not.exist(err);
+
+                // Remove all documents after previous test
+
+                AccountGroup.Model.find().remove().exec(
+                    function (err) {
+                        should.not.exist(err);
+                        done();
+                    }
+                );
+
+            });
     });
 
     describe('.create', function () {
 
         it('should create a new group', function (done) {
 
-            var validGroups = [
-                {
-                    name: 'testGroup',
-                    perms: { // should create with perms ...
-                        hall: {
-                            create: true
+            async.each(
+                [
+                    {
+                        name: 'testGroup',
+                        perms: { // should create with perms ...
+                            hall: {
+                                create: true
+                            }
                         }
+                    },
+                    {
+                        name: 'testGroup2',
+                        perms: { // ... with empty perms (or null) ...
+
+                        }
+                    },
+                    {
+                        name: 'testGroup3'
+                        // ... and without them
+                    },
+                    {
+                        name: 'test group' // name with spaces
                     }
-                },
-                {
-                    name: 'testGroup',
-                    perms: { // ... with empty perms (or null) ...
+                ],
 
-                    }
-                },
-                {
-                    name: 'testGroup'
-                    // ... and without them
-                },
-                {
-                    name: 'test group' // name with spaces
-                }
-            ];
+                // Iterator
+                function (validGroup, callback) {
 
-            for ( var i in validGroups ){
 
-                // .create( data, next );
-                AccountGroup.create( validGroups[i], function (err, doc) {
+                    // .create( data, next );
+                    AccountGroup.create( validGroup, function (err, doc) {
+                        should.not.exist(err);
+
+                        doc.should.have.properties('id', 'name');
+                        doc.id.should.be.type('string');
+                        doc.name.should.be.type('string');
+                        doc.name.should.eql(validGroup.name);
+
+                        callback();
+                    } );
+
+
+                },
+
+                // End of iteration. Result
+                function (err) {
                     should.not.exist(err);
+                    done();
+                }
+            );
 
-                    doc.should.have.properties('id', 'name');
-                    doc.id.should.be.type('string');
-                    doc.name.should.be.type('string');
-                    doc.name.should.eql(validGroups[i].name);
-
-                    if ( i === validGroups.length-1 ){ done(); }
-                } );
-
-            }
 
         });
 
         xit('should not create a new group with invalid params', function(done){
 
-            var invalidGroups = [
-                {},
-                null,
-                "",
-                {
-                    name: {}        // incorrect name type
+            async.each(
+                [
+                    {},
+                    null,
+                    "",
+                    {
+                        name: {}        // incorrect name type
+                    },
+                    {
+                        name: true      // incorrect name type
+                    },
+                    {
+                        name: false     // incorrect name type
+                    },
+                    {
+                        perms: {}       // without name
+                    },
+                    {
+                        name: ''        // empty name
+                    },
+                    {
+                        name: '',       // incorrect perms type
+                        perms: ''       // ... string instead of object
+                    }
+                ],
+
+                // Iterator
+                function (invalidGroup, callback) {
+
+
+                    AccountGroup.create(invalidGroup, function(err, doc){
+                        should.exist(err);
+                        callback();
+                    });
+
+
                 },
-                {
-                    name: true      // incorrect name type
-                },
-                {
-                    name: false     // incorrect name type
-                },
-                {
-                    perms: {}       // without name
-                },
-                {
-                    name: ''        // empty name
-                },
-                {
-                    name: '',       // incorrect perms type
-                    perms: ''       // ... string instead of object
+
+                // End of iteration. Result
+                function (err) {
+                    should.not.exist(err);
+                    done();
                 }
-            ];
+            );
 
-            for ( var i in invalidGroups ) {
-                AccountGroup.create(invalidGroups[i], function(err, doc){
-                    should.exist(err);
+        });
 
-                    if ( i === invalidGroups.length-1 ){ done(); }
-                });
-            }
+        xit('should not create two AccountGroup with same names', function (done) {
+
+            async.series(
+                [
+                    // First create AccountObject. Should go fine
+                    function (callback) {
+
+                        theNewAccountGroup = null;
+
+                        AccountGroup.create(
+                            {
+                                name: 'Baz'
+                            },
+                            function (err, doc) {
+                                should.not.exist(err);
+                                callback();
+                            }
+                        );
+
+                    },
+
+                    function (callback) {
+
+                        AccountGroup.create(
+                            {
+                                name: 'Baz'
+                            },
+                            function (err, doc) {
+                                should.exist(err);
+                                callback();
+                            }
+                        );
+
+                    }
+                ],
+                function (err) {
+                    should.not.exist(err);
+                    done();
+                }
+            );
 
         });
 
