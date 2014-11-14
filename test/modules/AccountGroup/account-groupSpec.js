@@ -32,10 +32,10 @@ describe('AccountGroup module testing', function () {
 
         it('should create a new group', function (done) {
 
-            async.each(
+            async.eachSeries(
                 [
                     {
-                        name: 'testGroup',
+                        name: '.create1-1',
                         perms: { // should create with perms ...
                             hall: {
                                 create: true
@@ -43,35 +43,49 @@ describe('AccountGroup module testing', function () {
                         }
                     },
                     {
-                        name: 'testGroup2',
+                        name: '.create1-2',
                         perms: { // ... with empty perms (or null) ...
 
                         }
                     },
                     {
-                        name: 'testGroup3'
+                        name: '.create1-2'
                         // ... and without them
-                    },
-                    {
-                        name: 'test group' // name with spaces
                     }
                 ],
 
                 // Iterator
-                function (validGroup, callback) {
+                function (validGroup, eachSeriesCallback) {
 
 
-                    // .create( data, next );
-                    AccountGroup.create( validGroup, function (err, doc) {
+                    async.series([
+                        function (seriesCallback) {
+                            AccountGroup.Model.find().remove().exec(
+                                function (err) {
+                                    should.not.exist(err);
+                                    seriesCallback();
+                                }
+                            );
+                        },
+
+                        function (seriesCallback) {
+                            AccountGroup.create( validGroup, function (err, doc) {
+                                should.not.exist(err);
+
+                                doc.should.have.properties('id', 'name');
+                                doc.id.should.be.type('string');
+                                doc.name.should.be.type('string');
+                                doc.name.should.eql(validGroup.name);
+
+                                seriesCallback();
+                            } );
+                        }
+                    ],
+                    function (err) {
                         should.not.exist(err);
+                        eachSeriesCallback();
+                    });
 
-                        doc.should.have.properties('id', 'name');
-                        doc.id.should.be.type('string');
-                        doc.name.should.be.type('string');
-                        doc.name.should.eql(validGroup.name);
-
-                        callback();
-                    } );
 
 
                 },
@@ -88,7 +102,7 @@ describe('AccountGroup module testing', function () {
 
         it('should not create a new group with invalid params', function(done){
 
-            async.each(
+            async.eachSeries(
                 [
                     {},
                     null,
@@ -137,8 +151,7 @@ describe('AccountGroup module testing', function () {
 
         it('should not create two AccountGroup with same names', function (done) {
 
-            async.series(
-                [
+            async.series([
                     // First create AccountObject. Should go fine
                     function (callback) {
 
@@ -150,6 +163,22 @@ describe('AccountGroup module testing', function () {
                             },
                             function (err, doc) {
                                 should.not.exist(err);
+                                callback(err);
+                            }
+                        );
+
+                    },
+
+                    function (callback) {
+
+                        theNewAccountGroup = null;
+
+                        AccountGroup.create(
+                            {
+                                name: 'Baz'
+                            },
+                            function (err, doc) {
+                                should.exist(err);
                                 callback();
                             }
                         );
@@ -171,22 +200,21 @@ describe('AccountGroup module testing', function () {
                     }
                 ],
                 function (err) {
-                    should.not.exist(err);
+                    should.not.exists(err);
                     done();
-                }
-            );
+                });
 
         });
 
     });
 
-    xdescribe('.update', function () {
+    describe('.update', function () {
 
 
         it('should update AccountGroup', function (done) {
 
 
-            async.each(
+            async.eachSeries(
 
                 // valid new data of an Account Group
                 [
@@ -211,23 +239,44 @@ describe('AccountGroup module testing', function () {
                 ],
 
                 // iterator
-                function ( data, callback ) {
+                function ( data, finIterator ) {
 
-                    theNewAccountGroup = null;
+                    async.series([
 
-                    AccountGroup.create(
-                        {
-                            name: 'testGroup',
-                            perms: {
-                                hall: {
-                                    create: true
-                                }
-                            }
+                        // Remove old AccountGroup-s
+                        function (callback) {
+                            theNewAccountGroup = null;
+
+                            AccountGroup.Model.find().remove(function (err) {
+                                should.not.exist(err);
+                                callback()
+                            });
                         },
-                        function (err, doc) {
-                            should.not.exist(err);
-                            theNewAccountGroup = doc;
 
+                        // Create new AccountGroup
+                        function (callback) {
+
+                            AccountGroup.create(
+                                {
+                                    name: 'testGroupLol',
+                                    perms: {
+                                        hall: {
+                                            create: true
+                                        }
+                                    }
+                                },
+                                function (err, doc) {
+                                    should.not.exist(err);
+                                    theNewAccountGroup = doc;
+
+                                    callback();
+                                }
+                            );
+
+                        },
+
+                        // And... the final... updating
+                        function () {
 
                             AccountGroup.update(
                                 theNewAccountGroup.id,
@@ -243,16 +292,17 @@ describe('AccountGroup module testing', function () {
                                         doc.perms.should.eql(data.perms);
                                     }
 
-                                    callback();
+                                    finIterator();
                                 }
                             );
 
                         }
-                    );
+                    ]);
+
 
                 },
 
-                // async.each callback
+                // async.eachSeries callback
                 function (err) {
                     should.not.exist(err);
                     done();
@@ -261,11 +311,10 @@ describe('AccountGroup module testing', function () {
 
         });
 
-
         it('should not update AccountGroup with invalid data', function (done) {
 
 
-            async.each(
+            async.eachSeries(
 
                 // invalid new data of an Account Group
                 [
@@ -291,39 +340,63 @@ describe('AccountGroup module testing', function () {
                 ],
 
                 // iterator
-                function ( data, callback ) {
+                function ( data, iteratorCallback ) {
 
                     theNewAccountGroup = null;
 
-                    AccountGroup.create(
-                        {
-                            name: 'testGroup',
-                            perms: {
-                                hall: {
-                                    create: true
-                                }
+                    async.series([
+
+                            // Remove old AccountGroup
+                            function (callback) {
+                                AccountGroup.Model.find().remove().exec(
+                                    function (err) {
+                                        should.not.exist(err);
+                                        callback();
+                                    }
+                                );
+                            },
+
+                            // Create a new AccountGroup
+                            function (callback) {
+                                AccountGroup.create(
+                                    {
+                                        name: 'testGroup222',
+                                        perms: {
+                                            hall: {
+                                                create: true
+                                            }
+                                        }
+                                    },
+                                    function (err, doc) {
+                                        should.not.exist(err);
+                                        theNewAccountGroup = doc;
+
+                                        AccountGroup.update(
+                                            theNewAccountGroup.id,
+                                            data,
+                                            function (err, doc) {
+                                                should.exist(err);
+
+                                                callback();
+                                            }
+                                        );
+
+                                    }
+                                );
                             }
-                        },
-                        function (err, doc) {
+                        ],
+                        function (err) {
                             should.not.exist(err);
-                            theNewAccountGroup = doc;
+                            iteratorCallback();
+                        });
 
-                            AccountGroup.update(
-                                theNewAccountGroup.id,
-                                data,
-                                function (err, doc) {
-                                    should.exist(err);
 
-                                    callback();
-                                }
-                            );
 
-                        }
-                    );
+
 
                 },
 
-                // async.each callback
+                // async.eachSeries callback
                 function (err) {
                     should.not.exist(err);
                     done();
@@ -459,7 +532,7 @@ describe('AccountGroup module testing', function () {
 
         it('should call error when passing invalid params', function (done) {
 
-            async.each(
+            async.eachSeries(
                 [
                     '',
                     'ab69ba69ab676ab67',
@@ -545,7 +618,7 @@ describe('AccountGroup module testing', function () {
 
         it('should call error when passing invalid params', function (done) {
 
-            async.each(
+            async.eachSeries(
                 [
                     '',
                     'ab69ba69ab676ab67',
@@ -600,7 +673,7 @@ describe('AccountGroup module testing', function () {
 
         it('should update perms', function (done) {
 
-            async.each(
+            async.eachSeries(
                 [
                     {
                         hall: {
@@ -662,7 +735,7 @@ describe('AccountGroup module testing', function () {
 
         it('should not update perms', function (done) {
 
-            async.each(
+            async.eachSeries(
                 [
                     true,
                     false,
