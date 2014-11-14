@@ -65,14 +65,15 @@ module.exports = {
             }
         )
 
-
-
-
-
-
-
     },
 
+    /**
+     * Update AccountGroup info
+     * @param id stringObjectId
+     * @param data object {name:string} or {name:string, perms:object}
+     * @param next callback(err, doc)
+     * @returns {*}
+     */
     update: function (id, data, next) {
         if ( is(id).not.stringObjectId )
             return next('id argument is not stringObjectId');
