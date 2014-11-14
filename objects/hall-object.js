@@ -7,7 +7,12 @@ var HallModel = require('./../models/all.js').HallModel;
 
 var Hall = {
 
-
+    /**
+     * Create hall
+     * @param data object {name}
+     * @param next callback(err, doc)
+     * @returns {*}
+     */
     create: function (data, next) {
         if (is(data).not.object || !data)
             return next(new restify.InvalidArgumentError("argument data is not object"));
@@ -19,22 +24,33 @@ var Hall = {
             return next(new restify.InvalidArgumentError("argument name is not string"));
 
 
-        HallModel.findOne({name: data.name}, function(err, doc) {
+        HallModel.findOne({name: data.name}, function (err, doc) {
             if (!is(doc).null)
                 return next(new restify.InvalidArgumentError('hall with the same name is already exists'));
 
             HallModel.create(data, function (err, doc) {
                 if (err) return next(err);
 
+
                 next(null, {
                     id: doc._id.toString(),
                     name: doc.name
                 });
+
+                /*next(null, {
+                    id: doc._id.toString(),
+                    name: doc.name
+                });*/
             });
         });
     },
 
-
+    /**
+     * Get hall by id
+     * @param id stringObjectId
+     * @param next callback(err, doc)
+     * @returns {*}
+     */
     getById: function (id, next) {
         if (is(id).not.stringObjectId)
             return next(new restify.InvalidArgumentError("Hall.getById: searchingId is not ObjectId"));
@@ -53,6 +69,13 @@ var Hall = {
         });
     },
 
+    /**
+     * Update hall info
+     * @param id stringObjectId id
+     * @param data object {name}
+     * @param next callback(err, doc)
+     * @returns {*}
+     */
     update: function (id, data, next) {
         if (is(id).not.stringObjectId || !id)
             return next(new restify.InvalidArgumentError('id argument is not stringObjectId'));
@@ -84,6 +107,12 @@ var Hall = {
         });
     },
 
+    /**
+     * Remove hall
+     * @param id stringObjectId
+     * @param next
+     * @returns {*}
+     */
     remove: function (id, next) {
         if (is(id).not.stringObjectId)
             return next(new restify.InvalidArgumentError("Hall.remove: searchingId is not ObjectId"));
