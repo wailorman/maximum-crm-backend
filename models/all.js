@@ -2,7 +2,7 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var hallsSchema = new Schema({
-    name: String
+    name: {type: String, required: true}
 },{
     collection: 'halls'
 });
