@@ -86,7 +86,7 @@ describe('AccountGroup module testing', function () {
 
         });
 
-        xit('should not create a new group with invalid params', function(done){
+        it('should not create a new group with invalid params', function(done){
 
             async.each(
                 [
@@ -135,7 +135,7 @@ describe('AccountGroup module testing', function () {
 
         });
 
-        xit('should not create two AccountGroup with same names', function (done) {
+        it('should not create two AccountGroup with same names', function (done) {
 
             async.series(
                 [
