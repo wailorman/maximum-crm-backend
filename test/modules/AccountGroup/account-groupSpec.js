@@ -1,6 +1,6 @@
-var should = require('should');
-var mongoose = require('mongoose');
-var async = require('async');
+var should =        require('should');
+var mongoose =      require('mongoose');
+var async =         require('async');
 
 var AccountGroup =  require('../../../modules/account-group/account-group.js');
 
@@ -49,7 +49,7 @@ describe('AccountGroup module testing', function () {
                         }
                     },
                     {
-                        name: '.create1-2'
+                        name: '.create1-3'
                         // ... and without them
                     }
                 ],

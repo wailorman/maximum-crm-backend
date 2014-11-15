@@ -6,12 +6,38 @@ var AccountGroupModel = require('./account-group-model.js').AccountGroupModel;
 var async = require('async');
 var ObjectId = require('mongoose').Types.ObjectId;
 
+
 module.exports = {
+
+
+    /**
+     * Callback for AccountGroup
+     *
+     * @callback AccountGroupCallback
+     *
+     * @param {Error}           err
+     * @param {AccountGroupObject}    doc         A new AccountGroup object
+     */
+
+
+    /**
+     * @name AccountGroupObject
+     * @type {{
+     *      id: stringObjectId,
+     *      name: string,
+     *      perms: Perms
+     * }}
+     */
+
 
     /**
      * Create an AccountGroup
-     * @param data mixed {name:string} or {name:string, perms:object}
-     * @param next callback (err, doc)
+     *
+     * @param {object}      data            New AccountGroup parameters
+     * @param {String}      data.name       Name of the new AccountGroup
+     * @param {Perms}       data.perms      Permissions for the new AccountGroup
+     *
+     * @param {AccountGroupCallback} next   callback
      * @returns {*}
      */
     create: function ( data, next ) {
@@ -73,9 +99,14 @@ module.exports = {
 
     /**
      * Update AccountGroup info
-     * @param id stringObjectId
-     * @param data object {name:string} or {name:string, perms:object}
-     * @param next callback(err, doc)
+     *
+     * @param {stringObjectId}  id              AccountGroup id
+     *
+     * @param {object}          data            Data of the new AccountGroup
+     * @param {String}          data.name       Name of the new AccountGroup. Should be Unique
+     * @param {Perms=}          data.perms      Perms
+     *
+     * @param {AccountGroupCallback} next       callback
      * @returns {*}
      */
     update: function (id, data, next) {
@@ -125,8 +156,9 @@ module.exports = {
 
     /**
      * Remove AccountGroup (marked as delete, not completely remove)
-     * @param id stringObjectId
-     * @param next callback(err)
+     *
+     * @param {stringObjectId}          id
+     * @param {AccountGroupCallback}    next        callback
      * @returns {*}
      */
     remove: function (id, next) {
@@ -149,6 +181,13 @@ module.exports = {
         );
     },
 
+    /**
+     * Get AccountGroup by id
+     *
+     * @param {serializeObjectId}       id      AccountGroup id to find
+     * @param {AccountGroupCallback}    next    callback
+     * @returns {*}
+     */
     getById: function(id, next){
         if ( is(id).not.stringObjectId )
             return next( new restify.InvalidArgumentError('id argument is not stringObjectId') );
@@ -168,6 +207,13 @@ module.exports = {
         );
     },
 
+    /**
+     * Get AccountGroup permissions
+     *
+     * @param {stringObjectId}          id          AccountGroup id to find
+     * @param {PermsCallback}           next        Actual perms for an AccountGroup
+     * @returns {*}
+     */
     getPerms: function(id, next) {
         if ( is(id).not.stringObjectId )
             return next( new restify.InvalidArgumentError('id argument is not stringObjectId') );
@@ -183,6 +229,14 @@ module.exports = {
         );
     },
 
+    /**
+     * Update AccountGroup permissions
+     *
+     * @param {stringObjectId}          id          AccountGroup id to find
+     * @param {object}                  newPerms    Fully new perms object. Will rewrite all old permissions
+     * @param {PermsCallback}           next        New perms
+     * @returns {*}
+     */
     updatePerms: function(id, newPerms, next) {
         if ( is(id).not.stringObjectId )
             return next( new restify.InvalidArgumentError('id argument is not stringObjectId') );
