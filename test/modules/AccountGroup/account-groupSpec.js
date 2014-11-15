@@ -471,27 +471,50 @@ describe('AccountGroup module testing', function () {
 
     });
 
-    xdescribe('.getById', function () {
+    describe('.getById', function () {
 
         beforeEach(function (done) {
 
             theNewAccountGroup = null;
 
-            AccountGroup.create(
-                {
-                    name: 'Foo',
-                    perms: {
-                        hall: {
-                            whiskey: true
+            async.series([
+
+                // Remove old AccountGroup
+                function (seriesCallback) {
+
+                    AccountGroup.Model.find().remove().exec(
+                        function (err) {
+                            should.not.exist(err);
+                            seriesCallback();
                         }
-                    }
+                    );
+
                 },
-                function (err, doc) {
-                    should.not.exist(err);
-                    theNewAccountGroup = doc;
-                    done();
+
+                // Create new AccountGroup
+                function (seriesCallback) {
+                    AccountGroup.create(
+                        {
+                            name: 'Foo',
+                            perms: {
+                                hall: {
+                                    whiskey: true
+                                }
+                            }
+                        },
+                        function (err, doc) {
+                            should.not.exist(err);
+                            theNewAccountGroup = doc;
+                            seriesCallback();
+                        }
+                    );
                 }
-            );
+            ],
+            function(err){
+                should.not.exist(err);
+                done();
+            });
+
 
         });
 

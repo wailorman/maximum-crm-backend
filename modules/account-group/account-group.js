@@ -54,7 +54,11 @@ module.exports = {
                         function (err, doc) {
                             if (err) return next(err);
 
-                            next(null, doc);
+                            next(null, {
+                                id: doc._id.toString(),
+                                name: doc.name,
+                                perms: doc.perms
+                            });
                         }
                     );
 
@@ -108,7 +112,11 @@ module.exports = {
                 doc.save(function (err, savedDoc) {
                     if (err) return next(err);
 
-                    next(null, savedDoc);
+                    next(null, {
+                        id: savedDoc._id.toString(),
+                        name: savedDoc.name,
+                        perms: savedDoc.perms
+                    });
                 });
             }
         );
@@ -136,6 +144,25 @@ module.exports = {
                 doc.save(function(err, doc){
                     if (err) return next(err);
                     next(null);
+                });
+            }
+        );
+    },
+
+    getById: function(id, next){
+        if ( is(id).not.stringObjectId )
+            return next( new restify.InvalidArgumentError('id argument is not stringObjectId') );
+
+        AccountGroupModel.findOne(
+            { _id: ObjectId(id), deleted: false },
+            function (err, doc) {
+                if (err) return next(err);
+                if (!doc) return next( new restify.InvalidContentError('cant find AccountGroup') );
+
+                next(null, {
+                    id: doc._id.toString(),
+                    name: doc.name,
+                    perms: doc.perms
                 });
             }
         );
