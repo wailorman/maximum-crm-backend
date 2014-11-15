@@ -583,27 +583,47 @@ describe('AccountGroup module testing', function () {
 
     });
 
-    xdescribe('.getPerms', function () {
+    describe('.getPerms', function () {
 
         beforeEach(function (done) {
 
-            theNewAccountGroup = null;
+            async.series([
 
-            AccountGroup.create(
-                {
-                    name: 'Foo',
-                    perms: {
-                        hall: {
-                            whiskey: true
-                        }
+                    // Remove old AccountGroup
+                    function (seriesCallback) {
+
+                        AccountGroup.Model.find().remove().exec(
+                            function (err) {
+                                should.not.exist(err);
+                                seriesCallback();
+                            }
+                        );
+
+                    },
+
+                    // Create new AccountGroup
+                    function (seriesCallback) {
+                        AccountGroup.create(
+                            {
+                                name: 'Foo',
+                                perms: {
+                                    hall: {
+                                        whiskey: true
+                                    }
+                                }
+                            },
+                            function (err, doc) {
+                                should.not.exist(err);
+                                theNewAccountGroup = doc;
+                                seriesCallback();
+                            }
+                        );
                     }
-                },
-                function (err, doc) {
+                ],
+                function(err){
                     should.not.exist(err);
-                    theNewAccountGroup = doc;
                     done();
-                }
-            );
+                });
 
         });
 
@@ -653,7 +673,7 @@ describe('AccountGroup module testing', function () {
                 ],
                 function (invalidIdParam, callback) {
 
-                    AccountGroup.getParams( invalidIdParam, function(err, doc) {
+                    AccountGroup.getPerms( invalidIdParam, function(err, doc) {
                         should.exist(err);
                         callback();
                     });

@@ -168,5 +168,20 @@ module.exports = {
         );
     },
 
+    getPerms: function(id, next) {
+        if ( is(id).not.stringObjectId )
+            return next( new restify.InvalidArgumentError('id argument is not stringObjectId') );
+
+        AccountGroupModel.findOne(
+            { _id: ObjectId(id), deleted: false },
+            function (err, doc) {
+                if (err) return next(err);
+                if (!doc || !doc.perms) return next( new restify.InvalidContentError('cant find AccountGroup') );
+
+                next(null, doc.perms);
+            }
+        );
+    },
+
     Model: AccountGroupModel
 };
