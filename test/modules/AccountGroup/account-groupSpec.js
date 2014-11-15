@@ -12,7 +12,7 @@ describe('AccountGroup module testing', function () {
 
         // Connecting to mongoose test database
 
-        mongoose.connect('mongodb://maximum-crm-test:qwerty155@gefest.wailorman.ru:27017/maximum-crm-test', {},
+        mongoose.connect('mongodb://localhost/test', {},
             function (err) {
                 should.not.exist(err);
 
