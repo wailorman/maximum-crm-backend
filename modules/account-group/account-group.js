@@ -36,7 +36,7 @@ module.exports = {
         }
 
         AccountGroupModel.findOne(
-            {name: data.name},
+            {name: data.name, deleted: false},
             function (err, doc) {
                 if (err) return next(err);
 
@@ -76,13 +76,13 @@ module.exports = {
      */
     update: function (id, data, next) {
         if ( is(id).not.stringObjectId )
-            return next('id argument is not stringObjectId');
+            return next( new restify.InvalidArgumentError('id argument is not stringObjectId') );
 
         if ( is(data).not.object || !data )
-            return next('data argument is not object');
+            return next( new restify.InvalidArgumentError('data argument is not object') );
 
         if ( is(data.name).not.string || !data.name )
-            return next('data.name argument is not string or empty');
+            return next( new restify.InvalidArgumentError('data.name argument is not string or empty') );
 
         if ( data.perms ){
 
@@ -97,7 +97,7 @@ module.exports = {
 
 
         AccountGroupModel.findOne(
-            { _id: ObjectId(id) },
+            { _id: ObjectId(id), deleted: false },
             function (err, doc) {
                 if (err) return next(err);
                 if (!doc) return next( new restify.InvalidContentError('cant find AccountGroup') );
@@ -113,6 +113,32 @@ module.exports = {
             }
         );
 
+    },
+
+    /**
+     * Remove AccountGroup (marked as delete, not completely remove)
+     * @param id stringObjectId
+     * @param next callback(err)
+     * @returns {*}
+     */
+    remove: function (id, next) {
+        if ( is(id).not.stringObjectId )
+            return next( new restify.InvalidArgumentError('id argument is not stringObjectId') );
+
+        AccountGroupModel.findOne(
+            { _id: ObjectId(id), deleted: false },
+            function (err, doc) {
+                if (err) return next(err);
+                if (!doc) return next( new restify.InvalidContentError('cant find AccountGroup') );
+
+                doc.deleted = true;
+
+                doc.save(function(err, doc){
+                    if (err) return next(err);
+                    next(null);
+                });
+            }
+        );
     },
 
     Model: AccountGroupModel

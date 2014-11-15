@@ -409,7 +409,7 @@ describe('AccountGroup module testing', function () {
 
     });
 
-    xdescribe('.remove', function () {
+    describe('.remove', function () {
 
         beforeEach(function (done) {
 
