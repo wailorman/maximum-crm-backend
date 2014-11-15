@@ -183,5 +183,37 @@ module.exports = {
         );
     },
 
+    updatePerms: function(id, newPerms, next) {
+        if ( is(id).not.stringObjectId )
+            return next( new restify.InvalidArgumentError('id argument is not stringObjectId') );
+
+        if ( !newPerms ){
+            // empty newPerms {}
+            newPerms = {};
+        }else{
+            if ( is(newPerms).not.object )
+                return next( new restify.InvalidArgumentError('newPerms argument is not object') );
+        }
+
+        AccountGroupModel.findOne(
+            { _id: ObjectId(id), deleted: false },
+            function (err, doc) {
+                if (err) return next(err);
+                if (!doc) return next( new restify.InvalidContentError('cant find AccountGroup') );
+
+                doc.perms = newPerms;
+
+                doc.save(function (err, doc) {
+                    if (err) return next(err);
+                    next(null, {
+                        id: doc._id.toString(),
+                        name: doc.name,
+                        perms: doc.perms
+                    });
+                });
+            }
+        );
+    },
+
     Model: AccountGroupModel
 };

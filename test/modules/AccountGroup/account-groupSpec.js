@@ -690,27 +690,47 @@ describe('AccountGroup module testing', function () {
     });
 
 
-    xdescribe('.updatePerms', function () {
+    describe('.updatePerms', function () {
 
         beforeEach(function (done) {
 
-            theNewAccountGroup = null;
+            async.series([
 
-            AccountGroup.create(
-                {
-                    name: 'Foo',
-                    perms: {
-                        hall: {
-                            whiskey: true
-                        }
+                    // Remove old AccountGroup
+                    function (seriesCallback) {
+
+                        AccountGroup.Model.find().remove().exec(
+                            function (err) {
+                                should.not.exist(err);
+                                seriesCallback();
+                            }
+                        );
+
+                    },
+
+                    // Create new AccountGroup
+                    function (seriesCallback) {
+                        AccountGroup.create(
+                            {
+                                name: 'Foo',
+                                perms: {
+                                    hall: {
+                                        whiskey: true
+                                    }
+                                }
+                            },
+                            function (err, doc) {
+                                should.not.exist(err);
+                                theNewAccountGroup = doc;
+                                seriesCallback();
+                            }
+                        );
                     }
-                },
-                function (err, doc) {
+                ],
+                function(err){
                     should.not.exist(err);
-                    theNewAccountGroup = doc;
                     done();
-                }
-            );
+                });
 
         });
 
@@ -736,23 +756,6 @@ describe('AccountGroup module testing', function () {
                     }
                 ],
                 function (validPerms, callback) {
-
-                    theNewAccountGroup = null;
-                    AccountGroup.create(
-                        {
-                            name: 'Foo',
-                            perms: {
-                                hall: {
-                                    whiskey: true
-                                }
-                            }
-                        },
-                        function (err, doc) {
-                            should.not.exist(err);
-                            theNewAccountGroup = doc;
-                            done();
-                        }
-                    );
 
                     AccountGroup.updatePerms(
                         theNewAccountGroup.id,
@@ -781,8 +784,7 @@ describe('AccountGroup module testing', function () {
             async.eachSeries(
                 [
                     true,
-                    false,
-                    ''
+                    'lol. error'
                 ],
                 function (invalidPerms, callback) {
                     AccountGroup.updatePerms(
