@@ -7,7 +7,38 @@ var async = require('async');
 var ObjectId = require('mongoose').Types.ObjectId;
 
 
-module.exports = {
+/**
+ * AccountGroup object
+ *
+ * @property {ObjectId}     id          Id of the AccountGroup
+ * @property {string}       name        Name of the AccountGroup
+ * @property {Perms}        perms       Permissions for the AccountGroup
+ *
+ * @constructor
+ */
+var AccountGroup = function () {
+
+    /**
+     * Id
+     *
+     * @type {stringObjectId}
+     */
+    this.id = null;
+
+    /**
+     * Name
+     *
+     * @type {string}
+     */
+    this.name = null;
+
+    /**
+     * Permissions
+     *
+     * @type {Perms}
+     */
+    this.perms = null;
+
 
 
     /**
@@ -15,9 +46,109 @@ module.exports = {
      *
      * @typedef {Function} AccountGroupCallback
      *
-     * @param {Error}                   err
-     * @param {AccountGroupObject}      doc         A new AccountGroup object
+     * param {Error}                   err
+     * param {AccountGroupObject}      doc         A new AccountGroup object
      */
+
+
+
+
+    /**
+     * Create a new AccountGroup
+     *
+     * @param {object} data Data of the new AccountGroup
+     * @param {AccountGroupCallback} next
+     */
+    this.create = function ( data, next ) {
+        if ( is(data).not.object || !data )
+            return next( new restify.InvalidArgumentError('data argument is not object') );
+
+        if ( is(data.name).not.string || !data.name )
+            return next( new restify.InvalidArgumentError('data.name argument is not string or empty') );
+
+        if ( data.perms ){
+
+            // We can don't pass perms. It will be AccountGroup without any perms
+
+            if ( is(data.perms).not.object )
+                return next( new restify.InvalidArgumentError('data.perms is not object') );
+
+        } else {
+
+            // If we didn't passed any perms
+
+            data.perms = {}; // Make it empty, because Model says: "perms are required"
+        }
+
+        AccountGroupModel.findOne(
+            {name: data.name, deleted: false},
+            function (err, doc) {
+                if (err) return next(err);
+
+                // If we didn't find any AccountGroups with the same name
+                if (!doc) {
+
+                    // Now, let's create a new AccountGroup
+                    AccountGroupModel.create(
+                        {
+                            // Generate data object again to avoid injections
+                            name: data.name,
+                            perms: data.perms,
+                            deleted: false
+                        },
+                        function (err, doc) {
+                            if (err) return next(err);
+
+
+                            var theNewAccountGroup = new AccountGroup();
+
+                            theNewAccountGroup.id =     doc._id.toString();
+                            theNewAccountGroup.name =   doc.name;
+                            theNewAccountGroup.perms =  new Perms();
+
+                            next(null, {
+                                id: doc._id.toString(),
+                                name: doc.name,
+                                perms: doc.perms
+                            });
+                        }
+                    );
+
+
+                } else {
+                    return next(new restify.InvalidArgumentError('AccountGroup with the same name is already exists'));
+                }
+            }
+        )
+
+    };
+
+    this.getById = function (id, next) {
+
+    };
+
+
+    var remove = function( next ) {
+
+    };
+
+    var update = function( next ) {
+
+    };
+
+};
+
+
+
+
+
+
+
+
+module.exports = {
+
+
+
 
 
     /**

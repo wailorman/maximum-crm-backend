@@ -63,7 +63,16 @@ describe('Perms class testing', function () {
                         create: function(){}
                     }
                 }
-            ]
+            ],
+            function (perms, eachSeriesCallback) {
+                var newPerms = new Perms(perms);
+                newPerms.isValid().should.eql(false);
+                eachSeriesCallback();
+            },
+            function (err) {
+                should.not.exist(err);
+                done();
+            }
         );
     });
 

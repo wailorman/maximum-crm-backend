@@ -72,6 +72,7 @@ describe('AccountGroup module testing', function () {
                             AccountGroup.create( validGroup, function (err, doc) {
                                 should.not.exist(err);
 
+                                doc.should.be.instanceof(AccountGroup);
                                 doc.should.have.properties('id', 'name');
                                 doc.id.should.be.type('string');
                                 doc.name.should.be.type('string');
@@ -239,7 +240,7 @@ describe('AccountGroup module testing', function () {
                 ],
 
                 // iterator
-                function ( data, finIterator ) {
+                function ( data, eachSeriesIterator ) {
 
                     async.series([
 
@@ -278,21 +279,22 @@ describe('AccountGroup module testing', function () {
                         // And... the final... updating
                         function () {
 
-                            AccountGroup.update(
-                                theNewAccountGroup.id,
-                                data,
-                                function (err, doc) {
+                            for ( var i in data ){
+                                theNewAccountGroup[i] = data[i];
+                            }
+
+                            AccountGroup.update( function (err, newAccountGroup) {
                                     should.not.exist(err);
 
                                     if ( data.name ){
-                                        doc.name.should.eql(data.name);
+                                        newAccountGroup.name.should.eql(data.name);
                                     }
 
                                     if ( data.perms ){
-                                        doc.perms.should.eql(data.perms);
+                                        newAccountGroup.perms.should.eql(data.perms);
                                     }
 
-                                    finIterator();
+                                    eachSeriesIterator();
                                 }
                             );
 
@@ -342,7 +344,7 @@ describe('AccountGroup module testing', function () {
                 // iterator
                 function ( data, iteratorCallback ) {
 
-                    theNewAccountGroup = null;
+                    //theNewAccountGroup = null;
 
                     async.series([
 
@@ -367,14 +369,18 @@ describe('AccountGroup module testing', function () {
                                             }
                                         }
                                     },
-                                    function (err, doc) {
+                                    function (err, newAccountGroup) {
                                         should.not.exist(err);
-                                        theNewAccountGroup = doc;
+                                        theNewAccountGroup = newAccountGroup;
 
-                                        AccountGroup.update(
-                                            theNewAccountGroup.id,
-                                            data,
-                                            function (err, doc) {
+
+                                        for ( var i in data ){
+                                            theNewAccountGroup[i] = data[i];
+                                        }
+
+
+                                        theNewAccountGroup.update(
+                                            function (err) {
                                                 should.exist(err);
 
                                                 callback();
@@ -424,9 +430,9 @@ describe('AccountGroup module testing', function () {
                         }
                     }
                 },
-                function (err, doc) {
+                function (err, newAccountGroup) {
                     should.not.exist(err);
-                    theNewAccountGroup = doc;
+                    theNewAccountGroup = newAccountGroup;
                     done();
                 }
             );
@@ -435,8 +441,7 @@ describe('AccountGroup module testing', function () {
 
         it('should remove AccountGroup', function (done) {
 
-            AccountGroup.remove(
-                theNewAccountGroup.id,
+            theNewAccountGroup.remove(
                 function (err) {
                     should.not.exists(err);
                     done();
@@ -447,15 +452,13 @@ describe('AccountGroup module testing', function () {
 
         it('should not remove already removed AccountGroup', function (done) {
 
-            AccountGroup.remove(
-                theNewAccountGroup.id,
+            theNewAccountGroup.remove(
                 function (err) {
 
                     // first removing...
                     should.not.exists(err);
 
-                    AccountGroup.remove(
-                        theNewAccountGroup.id,
+                    theNewAccountGroup.remove(
                         function (err) {
                             // second removing. should failed
                             should.exist(err);
@@ -502,9 +505,9 @@ describe('AccountGroup module testing', function () {
                                 }
                             }
                         },
-                        function (err, doc) {
+                        function (err, foundAccountGroup) {
                             should.not.exist(err);
-                            theNewAccountGroup = doc;
+                            theNewAccountGroup = foundAccountGroup;
                             seriesCallback();
                         }
                     );
@@ -525,7 +528,9 @@ describe('AccountGroup module testing', function () {
                 function (err, doc) {
                     should.not.exist(err);
 
+                    doc.should.be.instanceof(AccountGroup);
                     doc.should.eql(theNewAccountGroup);
+
 
                     done();
                 }
@@ -542,7 +547,7 @@ describe('AccountGroup module testing', function () {
 
                     AccountGroup.getById(
                         theNewAccountGroup.id,
-                        function (err, doc) {
+                        function (err) {
                             should.exist(err);
                             done();
                         }
@@ -567,7 +572,7 @@ describe('AccountGroup module testing', function () {
                 ],
                 function (invalidIdParam, callback) {
 
-                    AccountGroup.getById(invalidIdParam, function(err, doc) {
+                    AccountGroup.getById(invalidIdParam, function(err) {
                         should.exist(err);
                         callback();
                     });
@@ -583,7 +588,7 @@ describe('AccountGroup module testing', function () {
 
     });
 
-    describe('.getPerms', function () {
+    /*describe('.getPerms', function () {
 
         beforeEach(function (done) {
 
@@ -687,10 +692,10 @@ describe('AccountGroup module testing', function () {
 
         });
 
-    });
+    });*/
 
 
-    describe('.updatePerms', function () {
+    /*describe('.updatePerms', function () {
 
         beforeEach(function (done) {
 
@@ -804,7 +809,7 @@ describe('AccountGroup module testing', function () {
 
         });
 
-    });
+    });*/
 
 
     after(function () {
