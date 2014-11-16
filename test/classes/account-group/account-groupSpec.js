@@ -2,7 +2,7 @@ var should =        require('should');
 var mongoose =      require('mongoose');
 var async =         require('async');
 
-var AccountGroup =  require('../../../modules/account-group/account-group.js');
+var AccountGroup =  require('../../../classes/account-group/account-group.js');
 
 var theNewAccountGroup;
 

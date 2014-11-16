@@ -1,14 +1,15 @@
 var restify = require('restify');
 var server = restify.createServer();
-var lessons = require('./modules/lessons.js');
+//var lessons = require('./classes/lessons.js');
 var mongoose = require('mongoose');
+var randtoken = require('rand-token').suid;
 
 mongoose.connect('mongodb://maximum-crm:75FzSCK@gefest.wailorman.ru:27017/maximum-crm');
 
     server.use(restify.queryParser());
     server.use(restify.bodyParser());
 
-    //   LESSONS
+    /*//   LESSONS
 
     // Get all lessons
     server.get('/lessons', lessons.getAll);
@@ -24,8 +25,11 @@ mongoose.connect('mongodb://maximum-crm:75FzSCK@gefest.wailorman.ru:27017/maximu
 
     // Create lesson
     server.post('/lessons', lessons.create);
+*/
 
-
-server.listen(8080, function () {
+/*server.listen(8080, function () {
     console.log('Maximum CRM REST API server started on port 8080');
-});
+});*/
+
+console.log(randtoken(16));
+
