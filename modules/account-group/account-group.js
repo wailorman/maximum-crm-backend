@@ -13,10 +13,10 @@ module.exports = {
     /**
      * Callback for AccountGroup
      *
-     * @callback AccountGroupCallback
+     * @typedef {Function} AccountGroupCallback
      *
-     * @param {Error}           err
-     * @param {AccountGroupObject}    doc         A new AccountGroup object
+     * @param {Error}                   err
+     * @param {AccountGroupObject}      doc         A new AccountGroup object
      */
 
 
