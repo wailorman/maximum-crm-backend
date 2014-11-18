@@ -1,6 +1,10 @@
 //var ObjectId = require('mongodb').ObjectID;
 var ObjectId = require('mongoose').Types.ObjectId;
 
+var restify = require('restify');
+var util = require('util');
+
+
 module.exports.is = function(variable){
     var isVariable = {};
 
@@ -80,7 +84,7 @@ module.exports.is = function(variable){
 };
 
 module.exports.isObjectId = function (variable) {
-    var isVariableStringObjectId = new RegExp("^[0-9a-fA-F]{24}$");
+    var isVariableStringObjectId = new RegExp("^[0-9a-f]{24}$");
     return typeof variable === 'string' && isVariableStringObjectId.test(variable);
 };
 
@@ -89,4 +93,84 @@ module.exports.isToken = function (variable) {
     return typeof variable === 'string' && isToken.test(variable);
 };
 
+module.exports.isNull = function (variable) {
+    return typeof variable != 'boolean' && (!variable != true);
+};
+
+
+// TODO write unit tests for validatePerms
+module.exports.validatePerms = function (perms) {
+
+    function checkObjectLevel(obj) {
+        for ( var i in obj ){
+
+            if ( obj.hasOwnProperty(i) && obj[i] ) {
+
+                // If it's next level...
+                // Recursive call self to check next level
+                if ( typeof obj[i] === 'object' ) {
+
+                    if ( checkObjectLevel(obj[i]) ) {
+
+                        // It's correct perm. property
+                        // Continue checking...
+                        // To the next property...
+
+                        continue;
+
+                    }else{
+
+                        // Some of props in the next level
+                        // is invalid. Break checking.
+                        // Because we must return true
+                        // only if all the properties is valid
+
+                        return false;
+
+                    }
+
+                }
+
+
+                // If it's normal permission value (boolean)
+                if ( typeof obj[i] === 'boolean' ) {
+
+                    // Continue checking
+
+                    continue;
+                }
+
+
+                // If the property not next level
+                // and not normal permission value (boolean)
+                // it's incorrect property. Then we should
+                // break checking, because one of the property
+                // is invalid
+
+                return false;
+
+            }else{
+
+                // Object property is null.
+                // So, it can be a permission.
+                //
+                // The false permission
+
+                return true;
+            }
+        }
+
+        return true;
+
+    }
+
+    if ( typeof perms === 'boolean' && perms === true ) {
+        return false;
+    }
+
+    return checkObjectLevel(perms);
+
+};
+
 module.exports.ObjectId = ObjectId;
+

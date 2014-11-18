@@ -1,5 +1,7 @@
 var Perms = require('../../../classes/perms/perms.js');
 var async = require('async');
+var should = require('should');
+
 
 describe('Perms class testing', function () {
 
@@ -19,9 +21,22 @@ describe('Perms class testing', function () {
 
         async.eachSeries(
             [
-                examplePerms,
+
+                // VALID PERMISSIONS
+
+                {
+                    hall: {
+                        create: true
+                    }
+                },
+                {
+                    hall: {
+                        create: false
+                    }
+                },
                 {},
                 null,
+                false,
                 '',
                 {
                     hall: {
@@ -39,15 +54,14 @@ describe('Perms class testing', function () {
                 done();
             }
         );
-
-        var newPerms = new Perms(examplePerms);
-        newPerms.isValid().should.eql(true);
-        done();
     });
 
     it('should not validate new Perms', function (done) {
         async.eachSeries(
             [
+
+                // INVALID PERMISSIONS
+
                 {
                     hall: {
                         create: 'maybe'
@@ -79,6 +93,7 @@ describe('Perms class testing', function () {
     it('should return string', function (done) {
         var newPerms = new Perms(examplePerms);
         newPerms.toString().should.eql( JSON.stringify(examplePerms) );
+        done();
     });
 
 });

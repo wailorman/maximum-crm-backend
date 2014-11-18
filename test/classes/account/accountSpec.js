@@ -5,6 +5,9 @@ var async =         require('async');
 var Account =       require('../../../classes/account/account.js');
 var AccountGroup =  require('../../../classes/account-group/account-group.js');
 
+var Token =         require('../../../classes/token/token.js');
+var Perms =         require('../../../classes/perms/perms.js');
+
 var theNewAccount, theNewAccountGroup;
 
 
@@ -158,10 +161,15 @@ describe('Account module testing', function () {
                         newAccount.should.be.instanceof(Account);
 
                         // Check token
-                        newAccount.should.not.have.property('token');
+                        newAccount.token.should.be.instanceof(Token);
+
+                        // Perms
+                        newAccount.perms.should.be.instanceof(Perms);
+
 
                         if ( accountData.individualPerms ) { // If we passed individual perms for the Account
                             newAccount.individualPerms.should.eql(accountData.individualPerms);
+                            //newAccount.perms.object
                         }
 
                         eachCallback();
@@ -235,6 +243,25 @@ describe('Account module testing', function () {
 
 
     describe('.getById', function () {
+
+        beforeEach(function (done) {
+
+            async.series([
+
+                // Remove all old Accounts
+                function (seriesCallback) {
+                    Account.Model.find().remove().exec(function (err) {
+                        should.not.exist(err);
+                        seriesCallback();
+                    });
+                },
+                function () {
+
+                }
+            ]);
+
+        });
+
     });
 
     describe('.getByName', function () {
