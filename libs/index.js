@@ -1,0 +1,1 @@
+module.exports = require('./mini-funcs.js');

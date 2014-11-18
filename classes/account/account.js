@@ -1,9 +1,16 @@
+var restify = require('restify');
+var mongoose = require('mongoose');
+var mf = require('../../libs/mini-funcs.js');
+var AccountModel = require('./account-model.js');
+
+
+
 var Account = function () {
 
     /**
      * Account ID
      *
-     * @type {ObjectId}
+     * @type {stringObjectId}
      */
     this.id = null;
 

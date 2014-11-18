@@ -4,14 +4,13 @@ var is = require('../../libs/mini-funcs.js').is;
 var restify = require('restify');
 var AccountGroupModel = require('./account-group-model.js').AccountGroupModel;
 var async = require('async');
-var ObjectId = require('mongoose').Types.ObjectId;
-var mf = require('../../libs/mini-funcs.js');
+var mf = require('maxcrm-libs');
 
 
 /**
  * AccountGroup object
  *
- * @property {ObjectId}     id          Id of the AccountGroup
+ * @property {stringObjectId}     id          Id of the AccountGroup
  * @property {string}       name        Name of the AccountGroup
  * @property {Perms}        perms       Permissions for the AccountGroup
  *

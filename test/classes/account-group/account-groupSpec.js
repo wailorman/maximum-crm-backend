@@ -2,7 +2,7 @@ var should =            require('should');
 var mongoose =          require('mongoose');
 var async =             require('async');
 
-var AccountGroupClass = require('../../../classes/account-group/account-group.js');
+var AccountGroupClass = require('maxcrm-account-group');
 var AccountGroup =      new AccountGroupClass();
 var AccountGroupModel = require('../../../classes/account-group/account-group-model.js').AccountGroupModel;
 var Perms =             require('../../../classes/perms/perms.js');
@@ -470,6 +470,15 @@ describe('AccountGroup module testing', function () {
 
         });
 
+        it('should not update empty AccountGroup', function (done) {
+
+            AccountGroup.update(function (err) {
+                should.exist(err);
+                done();
+            });
+
+        });
+
     });
 
     describe('.remove', function () {
@@ -526,6 +535,15 @@ describe('AccountGroup module testing', function () {
 
                 }
             );
+
+        });
+
+        it('should not remove empty AccountGroup', function (done) {
+
+            AccountGroup.remove(function (err) {
+                should.exist(err);
+                done();
+            });
 
         });
 
@@ -644,229 +662,6 @@ describe('AccountGroup module testing', function () {
         });
 
     });
-
-    /*describe('.getPerms', function () {
-
-        beforeEach(function (done) {
-
-            async.series([
-
-                    // Remove old AccountGroup
-                    function (seriesCallback) {
-
-                        AccountGroupModel.find().remove().exec(
-                            function (err) {
-                                should.not.exist(err);
-                                seriesCallback();
-                            }
-                        );
-
-                    },
-
-                    // Create new AccountGroup
-                    function (seriesCallback) {
-                        AccountGroup.create(
-                            {
-                                name: 'Foo',
-                                perms: {
-                                    hall: {
-                                        whiskey: true
-                                    }
-                                }
-                            },
-                            function (err, doc) {
-                                should.not.exist(err);
-                                theNewAccountGroup = doc;
-                                seriesCallback();
-                            }
-                        );
-                    }
-                ],
-                function(err){
-                    should.not.exist(err);
-                    done();
-                });
-
-        });
-
-        it('should return perms for the group', function (done) {
-
-            AccountGroup.getPerms(
-                theNewAccountGroup.id,
-                function(err, perms) {
-                    should.not.exist(err);
-                    perms.should.eql(theNewAccountGroup.perms);
-                    done();
-                }
-            );
-
-        });
-
-        it('should not get perms of removed AccountGroup', function (done) {
-
-            AccountGroup.remove(
-                theNewAccountGroup.id,
-                function (err) {
-                    should.not.exist(err);
-
-                    AccountGroup.getPerms(
-                        theNewAccountGroup.id,
-                        function (err, perms) {
-                            should.exist(err);
-                            done();
-                        }
-                    );
-                }
-            );
-
-        });
-
-        it('should call error when passing invalid params', function (done) {
-
-            async.eachSeries(
-                [
-                    '',
-                    'ab69ba69ab676ab67',
-                    {},
-                    {id: 8383},
-                    null,
-                    true,
-                    false
-                ],
-                function (invalidIdParam, callback) {
-
-                    AccountGroup.getPerms( invalidIdParam, function(err, doc) {
-                        should.exist(err);
-                        callback();
-                    });
-
-                },
-                function (err) {
-                    should.not.exist(err);
-                    done();
-                }
-            );
-
-        });
-
-    });*/
-
-
-    /*describe('.updatePerms', function () {
-
-        beforeEach(function (done) {
-
-            async.series([
-
-                    // Remove old AccountGroup
-                    function (seriesCallback) {
-
-                        AccountGroupModel.find().remove().exec(
-                            function (err) {
-                                should.not.exist(err);
-                                seriesCallback();
-                            }
-                        );
-
-                    },
-
-                    // Create new AccountGroup
-                    function (seriesCallback) {
-                        AccountGroup.create(
-                            {
-                                name: 'Foo',
-                                perms: {
-                                    hall: {
-                                        whiskey: true
-                                    }
-                                }
-                            },
-                            function (err, doc) {
-                                should.not.exist(err);
-                                theNewAccountGroup = doc;
-                                seriesCallback();
-                            }
-                        );
-                    }
-                ],
-                function(err){
-                    should.not.exist(err);
-                    done();
-                });
-
-        });
-
-        it('should update perms', function (done) {
-
-            async.eachSeries(
-                [
-                    {
-                        hall: {
-                            zoo: true
-                        }
-                    },
-                    {
-                        otherPerm: {
-                            secondLevelPerm: true
-                        }
-                    },
-                    {
-
-                    },
-                    {
-                        falsePerm: false
-                    }
-                ],
-                function (validPerms, callback) {
-
-                    AccountGroup.updatePerms(
-                        theNewAccountGroup.id,
-                        validPerms,
-                        function (err, doc) {
-                            should.not.exist(err);
-
-                            doc.name.should.eql( theNewAccountGroup.name );
-                            doc.perms.should.eql( validPerms );
-
-                            callback();
-                        }
-                    );
-                },
-                function (err) {
-                    should.not.exist(err);
-                    done();
-                }
-            );
-
-        });
-
-
-        it('should not update perms', function (done) {
-
-            async.eachSeries(
-                [
-                    true,
-                    'lol. error'
-                ],
-                function (invalidPerms, callback) {
-                    AccountGroup.updatePerms(
-                        theNewAccountGroup.id,
-                        invalidPerms,
-                        function (err, doc) {
-                            should.exist(err);
-                            callback();
-                        }
-                    );
-                },
-                function (err) {
-                    should.not.exist(err);
-                    done();
-                }
-            );
-
-        });
-
-    });*/
 
 
     after(function () {

@@ -81,7 +81,7 @@ describe('Account module testing', function () {
         // Remove all Accounts
         beforeEach(function (done) {
 
-            Account.Model.find().remove().exec(function (err) {
+            AccountModel.find().remove().exec(function (err) {
                 should.not.exist(err);
                 done();
             });
@@ -250,7 +250,7 @@ describe('Account module testing', function () {
 
                 // Remove all old Accounts
                 function (seriesCallback) {
-                    Account.Model.find().remove().exec(function (err) {
+                    AccountModel.find().remove().exec(function (err) {
                         should.not.exist(err);
                         seriesCallback();
                     });
