@@ -1,57 +1,26 @@
 //var ObjectId = require('mongodb').ObjectID;
 var ObjectId = require('mongoose').Types.ObjectId;
 
+var restify = require('restify');
+var util = require('util');
+
+
 module.exports.is = function(variable){
     var isVariable = {};
 
     var isVariableStringObjectId = new RegExp("^[0-9a-fA-F]{24}$");
 
     isVariable.stringObjectId = typeof variable === 'string' &&
-                                isVariableStringObjectId.test(variable);
+    isVariableStringObjectId.test(variable);
 
     // not working!
     isVariable.ObjectId =       typeof variable !== 'boolean' &&
-                                (!variable !== true) &&  // not null
-                                variable.hasOwnProperty('toString') &&
-                                isVariableStringObjectId.test(variable.toString());
+    (!variable !== true) &&  // not null
+    variable.hasOwnProperty('toString') &&
+    isVariableStringObjectId.test(variable.toString());
 
 
     var isVariableStringNumber = new RegExp('^\\d+$');
-
-
-
-
-    /**
-     * Error object
-     *
-     * @typedef {object} Error
-     */
-
-    // permissions doc
-
-    /**
-     * Perms callback
-     *
-     * @callback PermsCallback
-     * @param {Error}           err
-     * @param {Perms}           perms       Perms object
-     */
-
-    /**
-     * The object of permissions
-     *
-     * Examples:
-     *  {
-     *      hall: {
-     *          create: true
-     *      }
-     *  }
-     *
-     * In example above we can see:
-     * User allowed to _create_ Hall, but not allowed to _remove_ them
-     *
-     * @typedef {object} Perms
-     */
 
 
     /**
@@ -59,25 +28,31 @@ module.exports.is = function(variable){
      *
      * @typedef {string} stringObjectId
      */
+
+    var isToken = new RegExp("^[0-9a-zA-Z]{24}$");
+
+    isVariable.stringToken = isToken.test(variable);
+
+
     isVariable.stringNumber =   typeof variable === 'string' &&
-                                isVariableStringNumber.test(variable);
+    isVariableStringNumber.test(variable);
 
     isVariable.Date =           variable instanceof Date;
 
     isVariable.null =           typeof variable === 'object' &&
-                                typeof variable !== 'boolean' &&
-                                (!variable === true);
+    typeof variable !== 'boolean' &&
+    (!variable === true);
 
     // some magic checking for null variable
     isVariable.object =         typeof variable === 'object' &&
-                                typeof variable !== 'boolean' &&
-                                (!variable !== true);
+    typeof variable !== 'boolean' &&
+    (!variable !== true);
 
     isVariable.undefined =      typeof variable == 'undefined';
 
 
     isVariable.string =         typeof variable !== 'undefined' &&
-                                typeof variable === 'string';
+    typeof variable === 'string';
 
     isVariable.number =         typeof variable == 'number';
 
@@ -108,4 +83,94 @@ module.exports.is = function(variable){
     };
 };
 
+module.exports.isObjectId = function (variable) {
+    var isVariableStringObjectId = new RegExp("^[0-9a-f]{24}$");
+    return typeof variable === 'string' && isVariableStringObjectId.test(variable);
+};
+
+module.exports.isToken = function (variable) {
+    var isToken = new RegExp("^[0-9a-zA-Z]{24}$");
+    return typeof variable === 'string' && isToken.test(variable);
+};
+
+module.exports.isNull = function (variable) {
+    return typeof variable != 'boolean' && (!variable != true);
+};
+
+
+// TODO write unit tests for validatePerms
+module.exports.validatePerms = function (perms) {
+
+    function checkObjectLevel(obj) {
+        for ( var i in obj ){
+
+            if ( obj.hasOwnProperty(i) && obj[i] ) {
+
+                // If it's next level...
+                // Recursive call self to check next level
+                if ( typeof obj[i] === 'object' ) {
+
+                    if ( checkObjectLevel(obj[i]) ) {
+
+                        // It's correct perm. property
+                        // Continue checking...
+                        // To the next property...
+
+                        continue;
+
+                    }else{
+
+                        // Some of props in the next level
+                        // is invalid. Break checking.
+                        // Because we must return true
+                        // only if all the properties is valid
+
+                        return false;
+
+                    }
+
+                }
+
+
+                // If it's normal permission value (boolean)
+                if ( typeof obj[i] === 'boolean' ) {
+
+                    // Continue checking
+
+                    continue;
+                }
+
+
+                // If the property not next level
+                // and not normal permission value (boolean)
+                // it's incorrect property. Then we should
+                // break checking, because one of the property
+                // is invalid
+
+                return false;
+
+            }else{
+
+                // Object property is null.
+                // So, it can be a permission.
+                //
+                // The false permission
+
+                return true;
+            }
+        }
+
+        return true;
+
+    }
+
+    if ( typeof perms === 'boolean' && perms === true ) {
+        return false;
+    }
+
+    return checkObjectLevel(perms);
+
+};
+
 module.exports.ObjectId = ObjectId;
+
