@@ -418,8 +418,6 @@ describe('AccountGroup module testing', function () {
                         function (err) {
                             should.not.exist(err);
 
-                            console.log('\nIm called done()!');
-
                             theSeriesCallback();
                         }
                     );
