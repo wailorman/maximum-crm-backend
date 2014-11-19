@@ -1,12 +1,12 @@
-var should =        require('should');
-var mongoose =      require('mongoose');
-var async =         require('async');
+var should = require('should');
+var mongoose = require('mongoose');
+var async = require('async');
 
-var Account =       require('../../../classes/account/account.js');
-var AccountGroup =  require('../../../classes/account-group/account-group.js');
+var AccountClass = require('maxcrm-account');
+var AccountModel = require('../../../classes/account/account-model.js').AccountModel;
 
-var Token =         require('../../../classes/token/token.js');
-var Perms =         require('../../../classes/perms/perms.js');
+var AccountGroupClass = require('maxcrm-account-group');
+var AccountGroupModel = require('../../../classes/account-group/account-group-model.js').AccountGroupModel;
 
 var theNewAccount, theNewAccountGroup;
 
@@ -28,7 +28,7 @@ describe('Account module testing', function () {
 
                         // Remove all old AccountGroup
 
-                        AccountGroup.Model.find().remove().exec(
+                        AccountGroupModel.find().remove().exec(
                             function (err) {
                                 should.not.exist(err);
                                 seriesCb();
@@ -39,7 +39,7 @@ describe('Account module testing', function () {
 
                         // Remove all Accounts
 
-                        Account.Model.find().remove().exec(
+                        AccountModel.find().remove().exec(
                             function (err) {
                                 should.not.exist(err);
                                 seriesCb();
@@ -50,7 +50,7 @@ describe('Account module testing', function () {
 
                         // Create AccountGroup for testing
 
-                        AccountGroup.create(
+                        new AccountGroupClass().create(
                             {
                                 name: 'Test New Group',
                                 perms: {

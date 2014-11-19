@@ -40,3 +40,7 @@ server.listen(8080, function () {
 
 //console.log(randtoken(16));
 
+// cd libs && npm link && cd .. && npm link maxcrm-libs
+// cd classes/account-group && npm link && cd ../.. && npm link maxcrm-account-group
+// cd classes/account && npm link && cd ../.. && npm link maxcrm-account
+
