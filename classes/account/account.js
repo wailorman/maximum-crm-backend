@@ -4,8 +4,18 @@ var mf = require('../../libs/mini-funcs.js');
 var AccountModel = require('./account-model.js');
 
 
-
-var Account = function () {
+/**
+ * Account class
+ *
+ * @param {object}          data                    Passing if you want to create a new Account. New Account data
+ * @param {string}          data.name               Name
+ * @param {AccountGroup}    data.group              Group in which the new Member will consist
+ * @param {Perms}           data.perms              Individual perms
+ * @param {Perms}           data.individualPerms    Individual perms
+ *
+ * @constructor
+ */
+var Account = function (data) {
 
     /**
      * Account ID
@@ -20,14 +30,14 @@ var Account = function () {
      *
      * @type {string}
      */
-    this.name = null;
+    this.name = data.name;
 
     /**
      * Account's AccountGroup
      *
      * @type {AccountGroup}
      */
-    this.group = null;
+    this.group = data.group;
 
     /**
      * Account token. If he has
@@ -50,55 +60,91 @@ var Account = function () {
      *
      * @type {Perms}
      */
-    this.individualPerms = null;
+    this.individualPerms = data.individualPerms || data.perms;
 
     /**
      * Create an Account
      *
-     * @param {object}      data    Parameters to create a new Account
-     * @param {callback}    next    Callback(err, doc)
+     * @param {function}    next    Callback(err, doc)
      */
-    this.create = function (data, next) {
+    this.create = function (next) {
     };
 
     /**
      * Get Account by id
      *
      * @param {string}      id      Account Id to find
-     * @param {callback}    next    Callback(err, doc)
+     *
+     * @param {function}    next    Callback(err, doc)
      */
     this.getById = function (id, next) {
     };
 
 
     /**
+     * Get an Account by name string
+     * @param {string}      name    Name to find
+     *
+     * @param {function}    next    callback(err, doc)
+     */
+    this.getByName = function (name, next) {
+    };
+
+
+    /**
+     * Get an Account by token
+     *
+     * @param {Token}       token       Token string
+     *
+     * @param {function}    next        callback(err, Account)
+     */
+    this.getByToken = function (token, next) {
+    };
+
+    /**
      * Authenticate by username & password
      *
      * @param {string}      username    Username of the Account to auth
      * @param {string}      password    Password of the Account to auth
-     * @param {callback}    next        Callback(err, doc)
+     *
+     * @param {function}    next        Callback(err, doc)
      */
     this.auth = function (username, password, next) {
     };
 
 
     /**
+     * Terminate user session
+     *
+     * @param {Token|function}  tokenOrNext     Token to logout or callback.
+     *                                          If passed a callback, method will terminate all current sessions
+     *
+     * @param {function=}       next            Callback(err, Account)
+     */
+    this.logout = function (tokenOrNext, next) {
+
+    };
+
+    /**
      * Remove Account
      *
-     * @param {callback}    next        Callback(err, doc). doc - Found Account
+     * @param {function}    next        Callback(err, doc). doc - Found Account
      */
     this.remove = function (next) {
     };
 
     /**
      * Update Account data by parameters in the self object
-     * Example:
-     * someAccount.name = "ivan233";
-     * someAccount.update(function(...){ ... });
      *
-     * @param {callback}    next        Callback(err, newDoc). newDoc - Updated Account data
+     * @example
+     * someAccount.name = "ivan233";
+     * someAccount.update(function(err, Account){ ... });
+     *
+     * @param {function}    next        Callback(err, newDoc). newDoc - Updated Account data
      */
     this.update = function (next) {
     };
 
 };
+
+module.exports = Account;
