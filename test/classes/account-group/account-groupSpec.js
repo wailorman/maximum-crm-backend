@@ -5,8 +5,6 @@ var async =             require('async');
 var AccountGroupClass = require('maxcrm-account-group');
 var AccountGroup =      new AccountGroupClass();
 var AccountGroupModel = require('../../../classes/account-group/account-group-model.js').AccountGroupModel;
-var Perms =             require('../../../classes/perms/perms.js');
-var Token =             require('../../../classes/token/token.js');
 
 var theNewAccountGroup;
 
@@ -479,6 +477,8 @@ describe('AccountGroup module testing', function () {
 
         });
 
+        it('should not update AccountGroup name to the already used name');
+
     });
 
     describe('.remove', function () {
@@ -516,6 +516,10 @@ describe('AccountGroup module testing', function () {
 
         });
 
+        it('should not find removed AccountGroup');
+
+        it('should mark removed AccountGroup as {deleted: true}');
+
         it('should not remove already removed AccountGroup', function (done) {
 
             theNewAccountGroup.remove(
@@ -546,6 +550,8 @@ describe('AccountGroup module testing', function () {
             });
 
         });
+
+        it('should update Accounts info which using this AccountGroup');
 
     });
 
@@ -633,7 +639,7 @@ describe('AccountGroup module testing', function () {
 
         });
 
-        it('should call error when passing invalid params', function (done) {
+        it('should not call with invalid params', function (done) {
 
             async.eachSeries(
                 [
@@ -660,6 +666,17 @@ describe('AccountGroup module testing', function () {
             );
 
         });
+
+    });
+
+
+    describe('.getByName', function () {
+
+        it('should get AccountGroup');
+
+        it('should not get removed AccountGroup');
+
+        it('should not get AccountGroup with invalid params');
 
     });
 

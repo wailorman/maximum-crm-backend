@@ -9,9 +9,9 @@ var AccountModel = require('./account-model.js');
  *
  * @param {object}          data                    Passing if you want to create a new Account. New Account data
  * @param {string}          data.name               Name
+ * @param {string}          data.password           Password
  * @param {AccountGroup}    data.group              Group in which the new Member will consist
- * @param {Perms}           data.perms              Individual perms
- * @param {Perms}           data.individualPerms    Individual perms
+ * @param {object}          data.individualPerms    Individual perms
  *
  * @constructor
  */
@@ -33,6 +33,13 @@ var Account = function (data) {
     this.name = data.name;
 
     /**
+     * Account password (md5 or string)
+     *
+     * @type {string}
+     */
+    this.password = data.password;
+
+    /**
      * Account's AccountGroup
      *
      * @type {AccountGroup}
@@ -42,15 +49,14 @@ var Account = function (data) {
     /**
      * Account token. If he has
      *
-     * @type {Token}
+     * @type {Array}
      */
     this.token = null;
-
 
     /**
      * AccountGroup + Individual perms
      *
-     * @type {Perms}
+     * @type {object}
      */
     this.perms = null;
 
@@ -58,9 +64,9 @@ var Account = function (data) {
     /**
      * Individual for Account perms
      *
-     * @type {Perms}
+     * @type {object}
      */
-    this.individualPerms = data.individualPerms || data.perms;
+    this.individualPerms = data.individualPerms;
 
     /**
      * Create an Account
@@ -94,7 +100,7 @@ var Account = function (data) {
     /**
      * Get an Account by token
      *
-     * @param {Token}       token       Token string
+     * @param {string}       token       Token string
      *
      * @param {function}    next        callback(err, Account)
      */
@@ -116,13 +122,21 @@ var Account = function (data) {
     /**
      * Terminate user session
      *
-     * @param {Token|function}  tokenOrNext     Token to logout or callback.
-     *                                          If passed a callback, method will terminate all current sessions
+     * @param {string}         token     Token to logout.
      *
-     * @param {function=}       next            Callback(err, Account)
+     * @param {function}       next      Callback(err, Account)
      */
-    this.logout = function (tokenOrNext, next) {
+    this.logout = function (token, next) {
 
+    };
+
+
+    /**
+     * Terminate all user sessions
+     *
+     * @param {function}    next    callback(err, doc)
+     */
+    this.logoutAll = function (next) {
     };
 
     /**
