@@ -4,7 +4,8 @@ var Schema = mongoose.Schema;
 
 var accountSchema = new Schema({
     name: {type: String, required: true},
-    perms: {type: Schema.Types.Mixed, required: true},
+    password: {type: String, required: true},
+    individualPerms: {type: Schema.Types.Mixed},
     group: {type: Schema.Types.ObjectId},
     deleted: {type: Boolean, required: true}
 }, {
