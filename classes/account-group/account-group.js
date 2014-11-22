@@ -12,42 +12,17 @@ var mf = require('maxcrm-libs');
  *
  * @property {stringObjectId}     id          Id of the AccountGroup
  * @property {string}       name        Name of the AccountGroup
- * @property {Perms}        perms       Permissions for the AccountGroup
+ * @property {object}       perms       Permissions for the AccountGroup
  *
  * @constructor
  */
-var AccountGroup = function () {
+var AccountGroup = function (data) {
 
     var self = this;
 
-    /**
-     * Id
-     *
-     * @type {stringObjectId}
-     */
-    this.id = null;
-
-    /**
-     * Name
-     *
-     * @type {string}
-     */
-    this.name = null;
-
-    /**
-     * Permissions
-     *
-     * @type {Perms}
-     */
-    this.perms = null;
-
-
-    /**
-     * Is deleted (just in case)
-     *
-     * @type {boolean}
-     */
-    this.deleted = null;
+    if (data) {
+        this.constructorData = data;
+    }
 
 
     /**
@@ -63,13 +38,39 @@ var AccountGroup = function () {
     /**
      * Create a new AccountGroup
      *
-     * @param {object}      data        Data of the new AccountGroup
-     * @param {string}      data.name   Name
-     * @param {Perms=}      data.perms  Perms
+     * @param {object|function}     data        Data of the new AccountGroup
+     * @param {string}              data.name   Name
+     * @param {object=}             data.perms  Perms
      *
-     * @param {function}    next        callback(err, doc)
+     * @param {function}            next        callback(err, doc)
      */
     this.create = function (data, next) {
+
+
+
+
+
+        if ( !next && typeof data == 'function' ){
+
+            if (self.constructorData) {
+                self.name = self.constructorData.name;
+
+                if (self.constructorData.perms) {
+                    self.perms = self.constructorData.perms;
+                }else{
+                    self.perms = null;
+                }
+            }
+
+            next = data;
+
+            data = {};
+
+            data.name = self.name ? self.name : null;
+            data.perms = self.perms ? self.perms : null;
+        }
+
+
         if ( typeof data != 'object' || !data)
             return next(new restify.InvalidArgumentError('data|not object'));
 
@@ -146,29 +147,20 @@ var AccountGroup = function () {
             {_id: id, deleted: false},
             function (err, doc) {
                 if (err) return next(err);
-                if (!doc) return next(new restify.InvalidContentError('cant find AccountGroup ' + self.id));
+                if (!doc) return next(new restify.InvalidContentError('id|404'));
 
-                var newAccountGroup = new AccountGroup();
+                //var newAccountGroup = new AccountGroup();
 
-                newAccountGroup.id = doc._id.toString();
-                newAccountGroup.name = doc.name;
-                newAccountGroup.perms = doc.perms;
-                newAccountGroup.deleted = doc.deleted;
+                self.id = doc._id.toString();
+                self.name = doc.name;
+                self.perms = doc.perms;
+                self.deleted = doc.deleted;
 
-                next(null, newAccountGroup);
+                next(null, self);
             }
         );
     };
 
-    /**
-     * Get AccountGroup by name
-     *
-     * @param {string}          name        Name
-     * @param {function}        next        Callback(err, doc)
-     */
-    this.getByName = function (name, next) {
-
-    };
 
     /**
      * Remove AccountGroup
@@ -229,7 +221,7 @@ var AccountGroup = function () {
                         {_id: self.id, deleted: false},
                         function (err, accountGroupDocument) {
                             if (err) return wcb(err);
-                            if (!accountGroupDocument) return wcb(new restify.InvalidArgumentError('id|cant find'));
+                            if (!accountGroupDocument) return wcb(new restify.InvalidArgumentError('id|404'));
                             wcb(null, accountGroupDocument);
                         });
 

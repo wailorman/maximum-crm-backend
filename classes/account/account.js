@@ -34,108 +34,152 @@ var Account = function (data) {
      */
     this.create = function (next) {
 
-        // check params
+        // 0. Move data from constructor
+        if ( self.constructorData ) {
+            self.name = self.constructorData.name;
+            self.password = self.constructorData.password;
 
-        if ( ! self.constructorData.name )
+            if ( self.constructorData.group ) {
+                self.group = self.constructorData.group;
+            }else{
+                self.group = null;
+            }
+
+
+            if ( self.constructorData.individualPerms ){
+                self.individualPerms = self.constructorData.individualPerms;
+            }else{
+                self.individualPerms = null;
+            }
+        }
+
+
+        // 1. Check variables types
+
+        if ( ! self.name )
             return next( new restify.InvalidArgumentError('name|null') );
 
-        if ( ! self.constructorData.password )
+        if ( ! self.password )
             return next( new restify.InvalidArgumentError('password|null') );
 
-        if ( typeof self.constructorData.name != 'string')
+        if ( typeof self.name != 'string')
             return next( new restify.InvalidArgumentError('name|not string') );
 
-        if ( typeof self.constructorData.password != 'string' )
+        if ( typeof self.password != 'string' )
             return next( new restify.InvalidArgumentError('password|not string') );
 
-        if ( self.constructorData.group && ! self.constructorData.group instanceof AccountGroup )
+        if ( self.group && ! (self.group instanceof AccountGroup) )
             return next( new restify.InvalidArgumentError('group|not AccountGroup') );
 
-        if ( self.constructorData.individualPerms && ! mf.validatePerms(self.constructorData.individualPerms) )
+        if ( self.individualPerms && ! mf.validatePerms(self.individualPerms) )
             return next( new restify.InvalidArgumentError('individualPerms|invalid') );
 
 
-        async.series([
+        async.waterfall(
+            [
+                // 2. Check name engaged
+                function (wcb) {
+                    AccountModel.findOne(
+                        {name: self.name, deleted: false},
+                        function (err, accountDocument) {
+                            if (err) return wcb(err);
 
-            // check existent
-            function (scb) {
-                AccountModel.findOne(
-                    {name: self.constructorData.name,
-                        deleted: false},
-                    function (err, doc) {
-                        if (err) return next(err);
+                            // name is engaged
+                            if (accountDocument)
+                                return wcb( new restify.InvalidArgumentError('name|engaged') );
 
-                        // If we didn't find Account with the same name
-                        if (!doc) {
-                            scb();
-                        }else{
-                            return next(    new restify.ConflictError('Account with name ' +
-                                            self.constructorData.name +
-                                            ' is already exists') );
+                            wcb();
                         }
+                    );
+                },
+
+                // 3. Check group existent
+                function (wcb) {
+                    if ( self.group ) {
+
+                        var accountGroupToFind = new AccountGroup();
+
+                        accountGroupToFind.getById(
+                            self.group.id,
+                            function (err) {
+                                if (err) return wcb(err);
+
+                                wcb();
+                            }
+                        );
+
+                    }else{
+                        wcb();
                     }
-                );
-            },
+                },
 
+                // 4. Write data to DB
+                function (wcb) {
+                    var dataToWriteToDb = {};
 
+                    dataToWriteToDb.name = self.name;
+                    dataToWriteToDb.password = passwordHash.isHashed(self.password) ?
+                        self.password :
+                        passwordHash.generate(self.password);
 
-            // write data to DB
-            function () {
+                    dataToWriteToDb.group = self.group ? self.group.id : null;
+                    dataToWriteToDb.individualPerms = self.individualPerms;
+                    dataToWriteToDb.deleted = false;
 
-                var dataToWrite = {};
+                    AccountModel.create(dataToWriteToDb, function (err, accountDocument) {
+                        if (err) return wcb(err);
+                        wcb(null, accountDocument);
+                    });
+                },
 
-                dataToWrite.name = self.constructorData.name;
-                dataToWrite.password = passwordHash.generate(self.constructorData.password);
+                // 5. Return new Account object
+                function (accountDocument, wcb) {
 
-                if (self.constructorData.group) {
-                    dataToWrite.group = self.constructorData.group.id;
-                } else {
-                    dataToWrite.group = null;
+                    async.series([
+                            function (scb) {
+
+                                if (accountDocument.group) {
+                                    self.group = new AccountGroup();
+                                    self.group.getById(accountDocument.group.toString(), function (err) {
+                                        if (err) return scb(err);
+
+                                        scb();
+                                    });
+                                } else {
+                                    self.group = null;
+                                    scb();
+                                }
+
+                            },
+                            function (scb) {
+
+                                self.id = accountDocument._id.toString();
+                                self.name = accountDocument.name;
+                                self.password = accountDocument.password;
+                                self.individualPerms = accountDocument.individualPerms;
+                                self.deleted = accountDocument.deleted;
+
+                                self.perms = self.group ?
+                                    mf.mergeObjects(self.group.perms, self.individualPerms) :
+                                    self.individualPerms;
+
+                                scb();
+                            }
+                        ],
+                        function (err) {
+                            if (err) return wcb(err);
+                            wcb();
+                        });
+
                 }
+            ],
+            function (err) {
+                if (err) return next(err);
 
-                if (self.constructorData.individualPerms) {
-                    dataToWrite.individualPerms = self.constructorData.individualPerms;
-                } else {
-                    dataToWrite.individualPerms = null;
-                }
-
-                dataToWrite.deleted = false;
-
-                AccountModel.create(
-                    dataToWrite,
-                    function (err, newAccountDocument) {
-                        if (err) return next(err);
-
-                        var newAccountObject = new Account();
-
-                        newAccountObject.id = newAccountDocument._id.toString();
-
-                        newAccountObject.name = newAccountDocument.name;
-                        newAccountObject.password = newAccountDocument.password;
-
-                        if ( self.constructorData.individualPerms )
-                            newAccountObject.individualPerms = newAccountDocument.individualPerms;
-
-
-                        if ( self.constructorData.group ) {
-                            var group = new AccountGroup();
-                            group.getById(self.constructorData.group.id, function (err, accountGroupDocument) {
-                                if (err) return next(err);
-
-                                if (!accountGroupDocument)
-                                    return next( new restify.InvalidArgumentError('group|not exists') );
-
-                                newAccountObject.group = accountGroupDocument;
-
-                                next(null, newAccountObject);
-                            });
-                        }else{
-                            next(null, newAccountObject);
-                        }
-                    }
-                );
+                next(null, self);
             }
-        ]);
+        );
+
 
 
     };
