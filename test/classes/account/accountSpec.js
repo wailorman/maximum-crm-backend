@@ -5,12 +5,12 @@ var passwordHash = require('password-hash');
 
 var AccountClass = require('../../../classes/account/account.js');
 var Account = new AccountClass();
-var AccountModel = require('../../../classes/account/account-model.js');
+var AccountModel = require('../../../classes/account/account-model.js').AccountModel;
 
 var AccountGroupClass = require('../../../classes/account-group/account-group.js');
 var AccountGroup = new AccountGroupClass();
-var AccountGroupModel = require('../../../classes/account-group/account-group-model.js');
-var TokenModel = require('../../../classes/account/token-model.js');
+var AccountGroupModel = require('../../../classes/account-group/account-group-model.js').AccountGroupModel;
+var TokenModel = require('../../../classes/account/token-model.js').TokenModel;
 
 
 var theNewAccount, theNewAccountGroup;

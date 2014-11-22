@@ -17,56 +17,7 @@ var AccountModel = require('./account-model.js');
  */
 var Account = function (data) {
 
-    /**
-     * Account ID
-     *
-     * @type {stringObjectId}
-     */
-    this.id = null;
-
-
-    /**
-     * Account name
-     *
-     * @type {string}
-     */
-    this.name = data.name;
-
-    /**
-     * Account password (md5 or string)
-     *
-     * @type {string}
-     */
-    this.password = data.password;
-
-    /**
-     * Account's AccountGroup
-     *
-     * @type {AccountGroup}
-     */
-    this.group = data.group;
-
-    /**
-     * Account token. If he has
-     *
-     * @type {Array}
-     */
-    this.token = null;
-
-    /**
-     * AccountGroup + Individual perms
-     *
-     * @type {object}
-     */
-    this.perms = null;
-
-
-    /**
-     * Individual for Account perms
-     *
-     * @type {object}
-     */
-    this.individualPerms = data.individualPerms;
+    this.constructorData = data;
 
     /**
      * Create an Account
