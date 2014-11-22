@@ -4,7 +4,7 @@ var server = restify.createServer();
 var mongoose = require('mongoose');
 var ObjectId = mongoose.Types.ObjectId;
 var randtoken = require('rand-token').suid;
-var Token = require('./classes/token/token.js');
+
 
 var AccountGroupModel = require('./classes/account-group/account-group.js').Model;
 
@@ -38,7 +38,7 @@ server.listen(8080, function () {
     console.log('Maximum CRM REST API server started on port 8080');
 });
 
-//console.log(randtoken(16));
+
 
 // cd libs && npm link && cd .. && npm link maxcrm-libs
 // cd classes/account-group && npm link && cd ../.. && npm link maxcrm-account-group
