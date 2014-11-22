@@ -98,6 +98,92 @@ module.exports.isNull = function (variable) {
 };
 
 
+/**
+ * Merge two object into one object
+ *
+ * @param {object}      obj1    First object. Would be overwritten by second
+ * @param {object}      obj2    Second object. Primary object
+ */
+var mergeObjects = function (obj1, obj2) {
+
+    /*var result;
+
+    if ( obj1 ){
+
+        result = obj1;
+
+        if ( obj2 ) {
+            for ( var k in obj2 ){
+
+                if ( obj2.hasOwnProperty(k) ) {
+                    if ( typeof obj2[k] == 'object' ) {
+                        result[k] = mergeObjects(obj1[k], obj2[k]);
+                    }
+                    if( typeof obj2[k] == 'boolean' ){
+                        result[k] = obj2[k];
+                    }
+                }else{
+                    result[k] = obj1[k];
+                }
+
+            }
+        }
+    }else{
+        result = null;
+    }
+
+    return result;*/
+
+    var groupPerms = obj1;
+    var individualPerms = obj2;
+
+    if ( !groupPerms && individualPerms && typeof individualPerms == 'object' ){
+        return individualPerms;
+    }
+
+    if ( !individualPerms && groupPerms && typeof groupPerms == 'object' ){
+        return groupPerms;
+    }
+
+    if ( !individualPerms && !groupPerms ) {
+        return null;
+    }
+
+    var result;
+
+    if ( groupPerms && typeof groupPerms == 'object' ) {
+        result = groupPerms;
+    }else{
+        result = {};
+    }
+
+
+    for ( var i in individualPerms ) {
+
+        if ( typeof individualPerms[i] == 'object' ) {
+
+            if ( typeof groupPerms[i] != 'object' ) {
+                groupPerms[i] = {};
+            }
+
+            result[i] = mergeObjects( groupPerms[i], individualPerms[i] );
+        }
+
+        if ( typeof individualPerms[i] == 'boolean') {
+
+            result[i] = individualPerms[i];
+
+        }
+
+    }
+
+    return result;
+
+};
+
+module.exports.mergeObjects = mergeObjects;
+
+
 // TODO write unit tests for validatePerms
 module.exports.validatePerms = function (perms) {
 
