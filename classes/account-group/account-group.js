@@ -110,20 +110,20 @@ var AccountGroup = function () {
                             if (err) return next(err);
 
 
-                            var theNewAccountGroup = new AccountGroup();
+                            //var theNewAccountGroup = new AccountGroup();
 
-                            theNewAccountGroup.id = doc._id.toString();
-                            theNewAccountGroup.name = doc.name;
-                            theNewAccountGroup.perms = doc.perms;
-                            theNewAccountGroup.deleted = doc.deleted;
+                            self.id = doc._id.toString();
+                            self.name = doc.name;
+                            self.perms = doc.perms;
+                            self.deleted = doc.deleted;
 
-                            next(null, theNewAccountGroup);
+                            next(null, self);
                         }
                     );
 
 
                 } else {
-                    return next(new restify.InvalidArgumentError('AccountGroup with the same name ("' + data.name + '") is already exists'));
+                    return next(new restify.InvalidArgumentError('name|engaged'));
                 }
             }
         )
@@ -161,6 +161,16 @@ var AccountGroup = function () {
     };
 
     /**
+     * Get AccountGroup by name
+     *
+     * @param {string}          name        Name
+     * @param {function}        next        Callback(err, doc)
+     */
+    this.getByName = function (name, next) {
+
+    };
+
+    /**
      * Remove AccountGroup
      * prototype method
      *
@@ -182,6 +192,9 @@ var AccountGroup = function () {
 
                 doc.save(function (err) {
                     if (err) return next(err);
+
+                    self.deleted = true;
+
                     next(null);
                 });
             }
@@ -198,82 +211,145 @@ var AccountGroup = function () {
      */
     this.update = function (next) {
 
-        if ( !mf.isNull(self.id) ) // if id empty or not ObjectId
-            return next(new restify.InvalidArgumentError('passed empty AccountGroup object'));
+        if ( !self.id )
+            return next(new restify.InvalidArgumentError('id|null'));
 
         if ( !mf.isObjectId(self.id) )
             return next(new restify.InvalidArgumentError('id|not ObjectId'));
 
 
-        AccountGroupModel.findOne(
-            {_id: self.id, deleted: false},
-            function (err, doc) {
-                if (err) return next(err);
-                if (!doc) return next(new restify.InvalidContentError('cant find AccountGroup ' + self.id));
+
+        async.waterfall(
+            [
+
+                // 1. Get AccountGroup document to update
+                function (wcb) {
+
+                    AccountGroupModel.findOne(
+                        {_id: self.id, deleted: false},
+                        function (err, accountGroupDocument) {
+                            if (err) return wcb(err);
+                            if (!accountGroupDocument) return wcb(new restify.InvalidArgumentError('id|cant find'));
+                            wcb(null, accountGroupDocument);
+                        });
+
+                },
+
+                // 2. What parameters was modified & update Object
+                function (accountGroupDocument, wcb) {
 
 
-                // Update only modified data
+                    async.series(
+                        [
+                            // 2.1  if name modified
+                            function (scb) {
+
+                                if (accountGroupDocument.name != self.name) {
+
+                                    // Check type
+                                    if (!self.name)
+                                        return scb(new restify.InvalidArgumentError('name|null'));
+
+                                    if (typeof self.name != 'string') // if name empty or not string
+                                        return scb(new restify.InvalidArgumentError('name|not string'));
+
+                                    accountGroupDocument.name = self.name;
+
+                                    // Check for name existing
+                                    AccountGroupModel.findOne(
+                                        {name: self.name, deleted: false},
+                                        function (err, isNameEngagedAccountGroupDocument) {
+                                            if (err) return wcb(err);
 
 
-                // Is name was modify
-                if ( doc.name != self.name ){
+                                            // Is name for update is already engaged
 
-                    // Check type
-                    if ( !mf.isNull(self.name) || typeof self.name != 'string' ) // if name empty of not string
-                        return next( new restify.InvalidArgumentError('name|not string') );
+                                            if (!isNameEngagedAccountGroupDocument) {
+                                                accountGroupDocument.name = self.name;
+                                                scb();
+                                            } else {
+                                                return scb(new restify.InvalidArgumentError('name|engaged'));
+                                            }
 
-                    doc.name = self.name;
+                                        }
+                                    );
 
-                }
+                                }else{
+                                    scb();
+                                }
+                            },
+
+                            // 2.2  if perms modified
+                            function (scb) {
+
+                                // If perms was modify
+                                if (accountGroupDocument.perms != self.perms) {
+                                    if (self.perms) {
 
 
-                // Is perms was modify
-                if ( doc.perms != self.perms ) {
-                    if ( self.perms ) {
+                                        // But if perms is not null, we should validate them
+                                        if (!mf.validatePerms(self.perms)) {
 
-                        // But if perms is not null, we should validate them
-                        if ( !mf.validatePerms(self.perms) ){
 
-                            // And if they are validated with errors, we can't use this perms
-                            // to write to DB
-                            return next( new restify.InvalidArgumentError('perms|invalid') );
+                                            // And if they are validated with errors, we can't use this perms
+                                            // to write to DB
+                                            return scb(new restify.InvalidArgumentError('perms|invalid'));
+                                        }
+
+                                    } else {
+
+                                        // If perms became null, we shouldn't validate them
+                                        // But just in case, we will set perms to null by ourselves
+
+                                        self.perms = {};
+
+                                    }
+
+
+                                    // Check type
+                                    accountGroupDocument.perms = self.perms;
+
+                                    scb();
+                                }else{
+                                    scb();
+                                }
+
+                            }
+                        ],
+
+                        // Main callback
+                        function (err) {
+                            if (err) return wcb(err);
+                            wcb(null, accountGroupDocument);
                         }
+                    );
 
-                    }else{
+                },
 
-                        // If perms became null, we shouldn't validate them
-                        // But just in case, we will set perms to null by ourselves
-
-                        self.perms = {};
-
-                    }
+                // 3. Update AccountGroup
+                function (accountGroupDocument, wcb) {
+                    accountGroupDocument.save(function (err, updatedAccountGroupDocument) {
+                        if (err) return wcb(err);
 
 
-                    // Check type
-                    doc.perms = self.perms;
+                        // Just in case update already updated AccountGroup object data
+                        self.id = updatedAccountGroupDocument._id.toString();
+                        self.name = updatedAccountGroupDocument.name;
+                        self.perms = updatedAccountGroupDocument.perms;
 
+                        // Return AccountGroup object
+                        next(null, self);
+                    });
                 }
 
+            ],
+            function (err) {
+                if (err) return next(err);
 
-
-
-
-
-
-                doc.save(function (err, savedDoc) {
-                    if (err) return next(err);
-
-
-                    // Just in case update already updated AccountGroup object data
-                    self.id = savedDoc._id.toString();
-                    self.name = savedDoc.name;
-                    self.perms = savedDoc.perms;
-
-                    // Return AccountGroup object
-                    next(null, self);
-                });
+                next(null, self);
             }
         );
+
 
     };
 };
