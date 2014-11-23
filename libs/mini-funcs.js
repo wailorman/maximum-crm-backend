@@ -104,7 +104,7 @@ module.exports.isNull = function (variable) {
  * @param {object}      obj1    First object. Would be overwritten by second
  * @param {object}      obj2    Second object. Primary object
  */
-var mergeObjects = function (obj1, obj2) {
+var mergePerms = function (obj1, obj2) {
 
     /*var result;
 
@@ -117,7 +117,7 @@ var mergeObjects = function (obj1, obj2) {
 
                 if ( obj2.hasOwnProperty(k) ) {
                     if ( typeof obj2[k] == 'object' ) {
-                        result[k] = mergeObjects(obj1[k], obj2[k]);
+                        result[k] = mergePerms(obj1[k], obj2[k]);
                     }
                     if( typeof obj2[k] == 'boolean' ){
                         result[k] = obj2[k];
@@ -166,7 +166,7 @@ var mergeObjects = function (obj1, obj2) {
                 groupPerms[i] = {};
             }
 
-            result[i] = mergeObjects( groupPerms[i], individualPerms[i] );
+            result[i] = mergePerms( groupPerms[i], individualPerms[i] );
         }
 
         if ( typeof individualPerms[i] == 'boolean') {
@@ -181,7 +181,7 @@ var mergeObjects = function (obj1, obj2) {
 
 };
 
-module.exports.mergeObjects = mergeObjects;
+module.exports.mergePerms = mergePerms;
 
 
 // TODO write unit tests for validatePerms
