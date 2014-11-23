@@ -269,8 +269,74 @@ var Account = function (data) {
      * @param {function}    next    callback(err, doc)
      */
     this.getByName = function (name, next) {
-    };
 
+        if ( !name )
+            return next( new restify.InvalidArgumentError('id|null') );
+
+        if ( typeof name != 'string' )
+            return next( new restify.InvalidArgumentError('id|not ObjectId') );
+
+
+        AccountModel.findOne(
+            {name: name, deleted: false},
+            function (err, accountDocument) {
+                if (err) return next(err);
+                if (!accountDocument) return next(new restify.ResourceNotFoundError('404'));
+
+                var theAccountGroup = new AccountGroup();
+
+                async.series(
+                    [
+                        // Get AccountGroup
+                        function (scb) {
+                            if (accountDocument.group) {
+
+                                theAccountGroup.getById(
+                                    accountDocument.group.toString(),
+                                    function (err) {
+                                        if (err) return scb(err);
+
+                                        scb();
+                                    }
+                                );
+
+                            } else {
+
+                                theAccountGroup = null;
+                                scb();
+
+                            }
+                        },
+
+                        // Write info into self object
+                        function(scb) {
+
+                            self.id = accountDocument._id.toString();
+                            self.name = accountDocument.name;
+                            self.group = theAccountGroup;
+                            self.individualPerms = accountDocument.individualPerms;
+                            self.password = null;
+
+                            self.perms = self.group ?
+                                mf.mergePerms(self.group.perms, self.individualPerms) :
+                                self.individualPerms;
+
+                            scb();
+
+                        }
+                    ],
+
+                    function (err) {
+                        if (err) return next(err);
+                        next(null, self);
+                    }
+                );
+
+            }
+        );
+
+
+    };
 
     /**
      * Get an Account by token

@@ -660,7 +660,7 @@ describe('Account module testing', function () {
 
     });
 
-    xdescribe('.getByName', function () {
+    describe('.getByName', function () {
 
         var theFoundAccount;
 
@@ -690,13 +690,20 @@ describe('Account module testing', function () {
                         }
                     });
 
-                    theNewAccount.create(function (err, createdAccount) {
+                    theNewAccount.create(function (err) {
                         should.not.exist(err);
 
-                        theNewAccount = createdAccount;
+                        var newId = theNewAccount.id;
 
-                        done();
+                        theNewAccount = new AccountClass();
+                        theNewAccount.getById(newId, function (err) {
+                            should.not.exist(err);
+                            done();
+                        });
+
                     });
+
+
 
                 }
             ]);
@@ -726,8 +733,10 @@ describe('Account module testing', function () {
             });
         });
 
-        // !!
-        it('should haven\'t password property', function (done) {});
+        it('should haven\'t password property', function (done) {
+            should.not.exist(theNewAccount.password);
+            done();
+        });
 
         it('should not find created Account with invalid params', function (done) {
 
@@ -744,7 +753,7 @@ describe('Account module testing', function () {
 
         });
 
-        it('should not find removed Account', function (done) {
+        xit('should not find removed Account', function (done) {
             theNewAccount.remove(function (err) {
                 should.not.exist(err);
 
@@ -758,9 +767,7 @@ describe('Account module testing', function () {
         });
 
         // -
-        xit('should not return AccountGroup info of deleted AccountGroup', function (done) {
-
-        });
+        it('should not return AccountGroup info of deleted AccountGroup');
 
     });
 
