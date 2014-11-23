@@ -160,7 +160,7 @@ var Account = function (data) {
                                 self.deleted = accountDocument.deleted;
 
                                 self.perms = self.group ?
-                                    mf.mergeObjects(self.group.perms, self.individualPerms) :
+                                    mf.mergePerms(self.group.perms, self.individualPerms) :
                                     self.individualPerms;
 
                                 scb();
@@ -192,6 +192,73 @@ var Account = function (data) {
      * @param {function}    next    Callback(err, doc)
      */
     this.getById = function (id, next) {
+
+        if ( !id )
+            return next( new restify.InvalidArgumentError('id|null') );
+
+        if ( !mf.isObjectId(id) )
+            return next( new restify.InvalidArgumentError('id|not ObjectId') );
+
+
+        AccountModel.findOne(
+            {_id: id, deleted: false},
+            function (err, accountDocument) {
+                if (err) return next(err);
+                if (!accountDocument) return next(new restify.ResourceNotFoundError('404'));
+
+                var theAccountGroup = new AccountGroup();
+
+                async.series(
+                    [
+                        // Get AccountGroup
+                        function (scb) {
+                            if (accountDocument.group) {
+
+                                theAccountGroup.getById(
+                                    accountDocument.group.toString(),
+                                    function (err) {
+                                        if (err) return scb(err);
+
+                                        scb();
+                                    }
+                                );
+
+                            } else {
+
+                                theAccountGroup = null;
+                                scb();
+
+                            }
+                        },
+
+                        // Write info into self object
+                        function(scb) {
+
+                            self.id = accountDocument._id.toString();
+                            self.name = accountDocument.name;
+                            self.group = theAccountGroup;
+                            self.individualPerms = accountDocument.individualPerms;
+                            self.password = null;
+
+                            self.perms = self.group ?
+                                mf.mergePerms(self.group.perms, self.individualPerms) :
+                                self.individualPerms;
+
+                            scb();
+
+                        }
+                    ],
+
+                    function (err) {
+                        if (err) return next(err);
+                        next(null, self);
+                    }
+                );
+
+            }
+        );
+
+
     };
 
 

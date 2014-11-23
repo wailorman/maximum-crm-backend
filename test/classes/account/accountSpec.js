@@ -364,10 +364,21 @@ describe('Account module testing', function () {
                                         group: theNewAccountGroup,
                                         individualPerms: {
                                             hall: {
-                                                create: false
+                                                create: false,
+                                                someObj: {
+                                                    anotherProp: true,
+                                                    anotherEmptyObj: {},
+                                                    anotherObj: {
+                                                        lol4ik: true
+                                                    }
+                                                }
                                             },
                                             lesson: {
-                                                edit: true
+                                                edit: true,
+                                                emptyObject: {},
+                                                object: {
+                                                    prop: true
+                                                }
                                             }
                                         }
                                     });
@@ -426,11 +437,22 @@ describe('Account module testing', function () {
 
                                 results[0].should.eql({
                                     hall: {
-                                        create: false
+                                        create: false,
+                                        someObj: {
+                                            anotherProp: true,
+                                            anotherEmptyObj: {},
+                                            anotherObj: {
+                                                lol4ik: true
+                                            }
+                                        }
                                     },
                                     coach: true,
                                     lesson: {
-                                        edit: true
+                                        edit: true,
+                                        emptyObject: {},
+                                        object: {
+                                            prop: true
+                                        }
                                     }
                                 });
 
@@ -508,7 +530,7 @@ describe('Account module testing', function () {
     });
 
 
-    xdescribe('.getById', function () {
+    describe('.getById', function () {
 
         var theFoundAccount;
 
@@ -538,24 +560,35 @@ describe('Account module testing', function () {
                         }
                     });
 
-                    theNewAccount.create(function (err, doc) {
+                    theNewAccount.create(function (err) {
                         should.not.exist(err);
-                        done();
+
+                        var newId = theNewAccount.id;
+
+                        theNewAccount = new AccountClass();
+                        theNewAccount.getById(newId, function (err) {
+                            should.not.exist(err);
+                            done();
+                        });
+
                     });
+
+
 
                 }
             ]);
 
         });
         
-        it('should find created account Account', function (done) {
+        it('should find created Account', function (done) {
 
             theFoundAccount = new AccountClass();
 
-            theFoundAccount.getById(theNewAccount.id, function (err, receivedAccount) {
+            theFoundAccount.getById(theNewAccount.id, function (err) {
                 should.not.exist(err);
 
-                receivedAccount.should.eql( theFoundAccount );
+                theFoundAccount.should.have.properties('id', 'name', 'group', 'perms', 'individualPerms');
+                theFoundAccount.should.eql( theFoundAccount );
 
                 done();
 
@@ -563,8 +596,10 @@ describe('Account module testing', function () {
 
         });
 
-        // !!
-        it('should haven\'t password property', function (done) {});
+        it('should haven\'t password property', function (done) {
+            should.not.exist(theNewAccount.password);
+            done();
+        });
 
         it('should not find nonexistent Account', function (done) {
             theNewAccount = new AccountClass();
@@ -606,12 +641,13 @@ describe('Account module testing', function () {
 
         });
 
-        it('should not find removed Account', function (done) {
+        // !!
+        xit('should not find removed Account', function (done) {
             theNewAccount.remove(function (err) {
                 should.not.exist(err);
 
                 theFoundAccount = new AccountClass();
-                theFoundAccount.getById(theFoundAccount.id, function (err) {
+                theFoundAccount.getById(theNewAccount.id, function (err) {
                     should.exist(err);
 
                     done();
@@ -620,7 +656,7 @@ describe('Account module testing', function () {
         });
 
         // -
-        xit('should not return AccountGroup info of deleted AccountGroup');
+        it('should not return AccountGroup info of deleted AccountGroup');
 
     });
 

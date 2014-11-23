@@ -147,7 +147,7 @@ var AccountGroup = function (data) {
             {_id: id, deleted: false},
             function (err, doc) {
                 if (err) return next(err);
-                if (!doc) return next(new restify.InvalidContentError('id|404'));
+                if (!doc) return next(new restify.ResourceNotFoundError('404'));
 
                 //var newAccountGroup = new AccountGroup();
 
