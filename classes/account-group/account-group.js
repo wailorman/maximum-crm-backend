@@ -58,7 +58,7 @@ var AccountGroup = function (data) {
                 if (self.constructorData.perms) {
                     self.perms = self.constructorData.perms;
                 }else{
-                    self.perms = null;
+                    self.perms = {};
                 }
             }
 
@@ -115,8 +115,16 @@ var AccountGroup = function (data) {
 
                             self.id = doc._id.toString();
                             self.name = doc.name;
-                            self.perms = doc.perms;
+
+                            if ( doc.perms ) {
+                                self.perms = doc.perms;
+                            }else{
+                                self.perms = {};
+                            }
+
                             self.deleted = doc.deleted;
+
+                            delete self.constructorData;
 
                             next(null, self);
                         }
@@ -153,7 +161,13 @@ var AccountGroup = function (data) {
 
                 self.id = doc._id.toString();
                 self.name = doc.name;
-                self.perms = doc.perms;
+
+                if ( doc.perms ) {
+                    self.perms = doc.perms;
+                }else{
+                    self.perms = {};
+                }
+
                 self.deleted = doc.deleted;
 
                 next(null, self);
@@ -210,25 +224,29 @@ var AccountGroup = function (data) {
             return next(new restify.InvalidArgumentError('id|not ObjectId'));
 
 
+        
+        //var dataForWrite;
+        var accountGroupDocument;
 
-        async.waterfall(
+        async.series(
             [
 
                 // 1. Get AccountGroup document to update
-                function (wcb) {
+                function (mainScb) {
 
                     AccountGroupModel.findOne(
                         {_id: self.id, deleted: false},
-                        function (err, accountGroupDocument) {
-                            if (err) return wcb(err);
-                            if (!accountGroupDocument) return wcb(new restify.InvalidArgumentError('id|404'));
-                            wcb(null, accountGroupDocument);
+                        function (err, doc) {
+                            if (err) return mainScb(err);
+                            if (!doc) return mainScb(new restify.InvalidArgumentError('id|404'));
+                            accountGroupDocument = doc;
+                            mainScb();
                         });
 
                 },
 
                 // 2. What parameters was modified & update Object
-                function (accountGroupDocument, wcb) {
+                function (mainScb) {
 
 
                     async.series(
@@ -245,18 +263,18 @@ var AccountGroup = function (data) {
                                     if (typeof self.name != 'string') // if name empty or not string
                                         return scb(new restify.InvalidArgumentError('name|not string'));
 
-                                    accountGroupDocument.name = self.name;
+                                    //dataForWrite.name = self.name;
 
                                     // Check for name existing
                                     AccountGroupModel.findOne(
                                         {name: self.name, deleted: false},
                                         function (err, isNameEngagedAccountGroupDocument) {
-                                            if (err) return wcb(err);
+                                            if (err) return mainScb(err);
 
 
                                             // Is name for update is already engaged
 
-                                            if (!isNameEngagedAccountGroupDocument) {
+                                            if (isNameEngagedAccountGroupDocument == false) {
                                                 accountGroupDocument.name = self.name;
                                                 scb();
                                             } else {
@@ -311,17 +329,19 @@ var AccountGroup = function (data) {
 
                         // Main callback
                         function (err) {
-                            if (err) return wcb(err);
-                            wcb(null, accountGroupDocument);
+                            if (err) return mainScb(err);
+                            mainScb();
                         }
                     );
 
                 },
 
                 // 3. Update AccountGroup
-                function (accountGroupDocument, wcb) {
+                function (mainScb) {
+
+
                     accountGroupDocument.save(function (err, updatedAccountGroupDocument) {
-                        if (err) return wcb(err);
+                        if (err) return mainScb(err);
 
 
                         // Just in case update already updated AccountGroup object data

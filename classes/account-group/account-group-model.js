@@ -7,7 +7,7 @@ var Schema = mongoose.Schema;
         perms: {type: Schema.Types.Mixed},
         deleted: {type: Boolean, required: true}
     }, {
-        collection: 'account-groups'
+        collection: 'account_groups'
     });
 
 

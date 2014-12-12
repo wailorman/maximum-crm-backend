@@ -30,9 +30,10 @@ var Account = function (data) {
     /**
      * Create an Account
      *
+     * @param {object}      data    Arguments
      * @param {function}    next    Callback(err, doc)
      */
-    this.create = function (next) {
+    this.create = function (data, next) {
 
         // 0. Move data from constructor
         if ( self.constructorData ) {
@@ -183,6 +184,16 @@ var Account = function (data) {
 
 
     };
+
+
+    this.get = function (conditions, callback) {
+
+    };
+
+
+    this.getOne = function (conditions, callback) {
+    };
+
 
     /**
      * Get Account by id
@@ -398,6 +409,207 @@ var Account = function (data) {
      * @param {function}    next        Callback(err, newDoc). newDoc - Updated Account data
      */
     this.update = function (next) {
+
+        if ( ! self.id )
+            return next( new restify.InvalidArgumentError('id|null') );
+
+        if ( ! mf.isObjectId( self.id ) )
+            return next( new restify.InvalidArgumentError('id|not ObjectId') );
+
+        var accountDocument;
+
+        async.series(
+            [
+                // 0. Get accountDocument for validating
+                function (scb) {
+                    AccountModel.findOne(
+                        {_id: self.id, deleted: false},
+                        function (err, doc) {
+                            if (err) return scb(err);
+                            if (!doc) return scb( new restify.ResourceNotFoundError('id|404') );
+
+                            accountDocument = doc;
+                            scb();
+                        }
+                    );
+                },
+
+                // 1. is name was modified
+                function (scb) {
+                    if ( self.name != accountDocument.name ) {
+
+                        // Check name
+                        // is name already engaged?
+                        var testAccount = new Account();
+                        testAccount.getByName(
+                            self.name, // new name
+                            function (err) {
+                                if (err && err instanceof restify.ResourceNotFoundError) {
+
+                                    // not engaged
+
+                                    // If was called error & if this error is 404 error
+                                    // it means that API can't find Account with
+                                    // same name => this name isn't engaged
+
+                                    accountDocument.name = self.name;
+                                    scb();
+
+                                    // success
+
+                                } else {
+
+                                    // engaged
+
+                                    // If err wasn't called. Maybe, account.old with
+                                    // the same name is exists => this name is engaged
+
+                                    if ( !err ) {
+                                        scb( new restify.InvalidArgumentError('name|engaged') );
+                                    }else{
+
+                                        // If error been called and it is not 404 error
+                                        scb( err );
+                                    }
+                                }
+                            }
+                        );
+
+                    }else{
+                        scb();
+                    }
+                },
+
+                // 2. is group was modified
+                function (scb) {
+
+                    if ( self.group ) {
+
+                        if ( !( self.group instanceof AccountGroup ) || !self.group.hasOwnProperty('id') )
+                            return scb( new restify.InvalidArgumentError('group|invalid object') );
+
+                        var groupId = self.group.id;
+
+                        self.group = new AccountGroup();
+                        self.group.getById( groupId, function (err) {
+
+                            if ( err && err instanceof restify.ResourceNotFoundError ) {
+
+                                // New AccountGroup wasn't find and so we can't use this
+                                // AccountGroup in Account info
+
+                                return scb( new restify.ResourceNotFoundError('group|404') );
+                            }
+                            if ( err ){
+
+                                // If trying to find new AccountGroup called an error, but
+                                // not 404 error, we call error with a received error
+
+                                return scb( err );
+                            }
+
+
+                            // If new AccountGroup exists, we can use them in new Account info
+
+                            accountDocument.group = self.group.id;
+                            scb();
+
+                        } );
+
+                    }else{
+
+                        // If we remove Account.group parameter or this Account did not
+                        // ever been an AccountGroup member
+
+                        // In the way, we should (to avoid any errors) rewrite .group parameter
+                        // to null
+
+                        accountDocument.group = null;
+                        scb();
+
+                    }
+
+                },
+
+                // 3. is password was modified
+                function (scb) {
+
+                    // By default password not passed to the Account properties
+                    // It means that if password not null, it was modified
+                    if ( self.password ) {
+
+                        if ( passwordHash.isHashed(self.password) ) {
+                            accountDocument.password = self.password;
+                        }else{
+                            accountDocument.password = passwordHash.generate( self.password );
+                        }
+
+                        scb();
+
+                    }else{
+
+                        // If the password is not changed, we simply fo to
+                        // the next step of the series
+                        scb();
+
+                    }
+
+                },
+
+                // 4. is individualPerms was modified
+                function (scb) {
+
+                    if ( self.individualPerms != accountDocument.individualPerms ) {
+
+                        // 4.1 Validating new perms
+                        if ( mf.validatePerms(self.individualPerms) ) {
+                            accountDocument.individualPerms = self.individualPerms;
+                            scb();
+                        }else{
+
+                            // if new individualPerms not been validated
+
+                            scb(new restify.InvalidArgumentError('individualPerms|invalid'));
+                        }
+
+                    }else{
+                        scb();
+                    }
+
+                },
+
+                // We already recreated AccountGroup object. Even if new
+                // AccountGroup is incorrect, group validator will call an error
+                // and we would not be on this step
+
+
+                // 6. Update accountDocument and self
+                function (scb) {
+
+                    accountDocument.save(function (err, newAccountDocument) {
+
+                        self.group = self.group;
+                        self.id = newAccountDocument._id.toString();
+                        self.name = newAccountDocument.name;
+                        self.individualPerms = newAccountDocument.individualPerms ?
+                            newAccountDocument.individualPerms : {};
+                        self.password = null;
+                        self.perms = self.group ?
+                            mf.mergePerms(self.group.perms, self.individualPerms) :
+                            self.individualPerms;
+
+                        scb();
+
+                    });
+
+                }
+            ],
+            function (err) {
+                if (err) return next(err);
+                next(null, self);
+            }
+        );
+
     };
 
 };
