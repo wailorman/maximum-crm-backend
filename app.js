@@ -47,6 +47,6 @@ server.listen(8080, function () {
 
 
 // cd libs && npm link && cd .. && npm link maxcrm-libs
-// cd classes/account.old-group && npm link && cd ../.. && npm link maxcrm-account.old-group
-// cd classes/account.old && npm link && cd ../.. && npm link maxcrm-account.old
+// cd classes/account-group && npm link && cd ../.. && npm link maxcrm-account-group
+// cd classes/account && npm link && cd ../.. && npm link maxcrm-account
 

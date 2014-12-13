@@ -498,7 +498,7 @@ var Account = function ( data ) {
 
                                     // engaged
 
-                                    // If err wasn't called. Maybe, account.old with
+                                    // If err wasn't called. Maybe, account with
                                     // the same name is exists => this name is engaged
 
                                     if ( !err ) {
