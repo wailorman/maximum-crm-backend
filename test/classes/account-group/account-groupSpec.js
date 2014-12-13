@@ -3,11 +3,11 @@ var mongoose =          require('mongoose');
 var async =             require('async');
 var mf = require('../../../libs/mini-funcs.js');
 
-var AccountGroupClass = require('maxcrm-account-group');
-var AccountGroup =      new AccountGroupClass();
+var AccountGroup = require('maxcrm-account-group');
+var AccountGroup =      new AccountGroup();
 var AccountGroupModel = require('../../../classes/account-group/account-group-model.js').AccountGroupModel;
 
-var AccountClass = require('../../../classes/account/account.js');
+var Account = require('../../../classes/account/account.js');
 var AccountModel = require('../../../classes/account/account-model.js').AccountModel;
 
 var theNewAccountGroup;
@@ -88,12 +88,12 @@ describe('AccountGroup module testing', function () {
                         // Create new AccountGroup
                         function (seriesCallback) {
 
-                            theNewAccountGroup = new AccountGroupClass();
+                            theNewAccountGroup = new AccountGroup();
 
                             theNewAccountGroup.create( validGroup, function (err) {
                                 should.not.exist(err);
 
-                                theNewAccountGroup.should.be.instanceof(AccountGroupClass);
+                                theNewAccountGroup.should.be.instanceof(AccountGroup);
 
                                 //theNewAccountGroup.should.have.properties('id', 'name');
 
@@ -179,7 +179,7 @@ describe('AccountGroup module testing', function () {
                             // Create new AccountGroup
                             function (seriesCallback) {
 
-                                theNewAccountGroup = new AccountGroupClass(validGroupData);
+                                theNewAccountGroup = new AccountGroup(validGroupData);
 
                                 /*for ( var i in validGroupData ){
                                     theNewAccountGroup[i] = validGroupData[i];
@@ -190,7 +190,7 @@ describe('AccountGroup module testing', function () {
 
 
 
-                                    theNewAccountGroup.should.be.instanceof(AccountGroupClass);
+                                    theNewAccountGroup.should.be.instanceof(AccountGroup);
 
 
                                     // id
@@ -361,7 +361,7 @@ describe('AccountGroup module testing', function () {
 
                 // Create a new AccountGroup
                 function () {
-                    theNewAccountGroup = new AccountGroupClass();
+                    theNewAccountGroup = new AccountGroup();
                     theNewAccountGroup.create({name: 'someAccountGroup'}, function (err) {
                         should.not.exist(err);
                         done();
@@ -421,7 +421,7 @@ describe('AccountGroup module testing', function () {
                         // Create new AccountGroup
                         function (scb) {
 
-                            theNewAccountGroup = new AccountGroupClass();
+                            theNewAccountGroup = new AccountGroup();
 
                             theNewAccountGroup.create(
                                 {
@@ -629,7 +629,7 @@ describe('AccountGroup module testing', function () {
 
         it('should not update AccountGroup name to the already used name', function (done) {
 
-            var accountGroupWithName = new AccountGroupClass();
+            var accountGroupWithName = new AccountGroup();
             accountGroupWithName.create({name: 'someExistentName'}, function (err) {
                 should.not.exist(err);
 
@@ -650,7 +650,7 @@ describe('AccountGroup module testing', function () {
 
         beforeEach(function (done) {
 
-            theNewAccountGroup = new AccountGroupClass();
+            theNewAccountGroup = new AccountGroup();
 
             theNewAccountGroup.create(
                 {
@@ -734,7 +734,7 @@ describe('AccountGroup module testing', function () {
                                 }
                             ],
                             function (testUserData, ecb) {
-                                var testUser = new AccountClass(testUserData);
+                                var testUser = new Account(testUserData);
                                 testUser.create(function (err) {
                                     if (err) return ecb(err);
                                     ecb(null, testUser);
@@ -762,7 +762,7 @@ describe('AccountGroup module testing', function () {
                         async.each(
                             testAccounts,
                             function (testAccount, ecb) {
-                                var updatedTestAccount = new AccountClass();
+                                var updatedTestAccount = new Account();
 
                                 updatedTestAccount.getById(testAccount.id, function (err) {
                                     if (err) return ecb(err);
@@ -838,7 +838,7 @@ describe('AccountGroup module testing', function () {
                 function (err) {
                     should.not.exist(err);
 
-                    theNewAccountGroup.should.be.instanceof(AccountGroupClass);
+                    theNewAccountGroup.should.be.instanceof(AccountGroup);
                     theNewAccountGroup.id.should.eql(theNewAccountGroup.id);
                     theNewAccountGroup.name.should.eql(theNewAccountGroup.name);
 
@@ -855,7 +855,7 @@ describe('AccountGroup module testing', function () {
                 function (err) {
                     should.not.exist(err);
 
-                    var accountToFind = new AccountGroupClass();
+                    var accountToFind = new AccountGroup();
 
                     accountToFind.getById(
                         theNewAccountGroup.id,
@@ -884,7 +884,7 @@ describe('AccountGroup module testing', function () {
                 ],
                 function (invalidIdParam, escb) {
 
-                    theNewAccountGroup = new AccountGroupClass();
+                    theNewAccountGroup = new AccountGroup();
 
                     theNewAccountGroup.getById(invalidIdParam, function(err) {
                         should.exist(err);

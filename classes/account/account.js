@@ -1,12 +1,20 @@
-var restify = require('restify');
-var mongoose = require('mongoose');
-var passwordHash = require('password-hash');
-var async = require('async');
+var restify = require( 'restify' );
+var mongoose = require( 'mongoose' );
+var passwordHash = require( 'password-hash' );
+var async = require( 'async' );
 
-var mf = require('../../libs/mini-funcs.js');
-var AccountModel = require('./account-model.js').AccountModel;
-var AccountGroup = require('../account-group/account-group.js');
+var mf = require( '../../libs/mini-funcs.js' );
+var AccountModel = require( './account-model.js' ).AccountModel;
+var AccountGroup = require( '../account-group/account-group.js' );
 
+
+var document2Object = function ( document, next ) {
+
+};
+
+Array.prototype.Account = {};
+Array.prototype.Account.find = function () {
+};
 
 /**
  * Account class
@@ -19,9 +27,9 @@ var AccountGroup = require('../account-group/account-group.js');
  *
  * @constructor
  */
-var Account = function (data) {
+var Account = function ( data ) {
 
-    if (data) {
+    if ( data ) {
         this.constructorData = data;
     }
 
@@ -33,7 +41,7 @@ var Account = function (data) {
      * @param {object}      data    Arguments
      * @param {function}    next    Callback(err, doc)
      */
-    this.create = function (data, next) {
+    this.create = function ( data, next ) {
 
         // 0. Move data from constructor
         if ( self.constructorData ) {
@@ -42,14 +50,14 @@ var Account = function (data) {
 
             if ( self.constructorData.group ) {
                 self.group = self.constructorData.group;
-            }else{
+            } else {
                 self.group = null;
             }
 
 
-            if ( self.constructorData.individualPerms ){
+            if ( self.constructorData.individualPerms ) {
                 self.individualPerms = self.constructorData.individualPerms;
-            }else{
+            } else {
                 self.individualPerms = null;
             }
         }
@@ -57,37 +65,37 @@ var Account = function (data) {
 
         // 1. Check variables types
 
-        if ( ! self.name )
-            return next( new restify.InvalidArgumentError('name|null') );
+        if ( !self.name )
+            return next( new restify.InvalidArgumentError( 'name|null' ) );
 
-        if ( ! self.password )
-            return next( new restify.InvalidArgumentError('password|null') );
+        if ( !self.password )
+            return next( new restify.InvalidArgumentError( 'password|null' ) );
 
-        if ( typeof self.name != 'string')
-            return next( new restify.InvalidArgumentError('name|not string') );
+        if ( typeof self.name != 'string' )
+            return next( new restify.InvalidArgumentError( 'name|not string' ) );
 
         if ( typeof self.password != 'string' )
-            return next( new restify.InvalidArgumentError('password|not string') );
+            return next( new restify.InvalidArgumentError( 'password|not string' ) );
 
-        if ( self.group && ! (self.group instanceof AccountGroup) )
-            return next( new restify.InvalidArgumentError('group|not AccountGroup') );
+        if ( self.group && !(self.group instanceof AccountGroup) )
+            return next( new restify.InvalidArgumentError( 'group|not AccountGroup' ) );
 
-        if ( self.individualPerms && ! mf.validatePerms(self.individualPerms) )
-            return next( new restify.InvalidArgumentError('individualPerms|invalid') );
+        if ( self.individualPerms && !mf.validatePerms( self.individualPerms ) )
+            return next( new restify.InvalidArgumentError( 'individualPerms|invalid' ) );
 
 
         async.waterfall(
             [
                 // 2. Check name engaged
-                function (wcb) {
+                function ( wcb ) {
                     AccountModel.findOne(
-                        {name: self.name, deleted: false},
-                        function (err, accountDocument) {
-                            if (err) return wcb(err);
+                        { name: self.name, deleted: false },
+                        function ( err, accountDocument ) {
+                            if ( err ) return wcb( err );
 
                             // name is engaged
-                            if (accountDocument)
-                                return wcb( new restify.InvalidArgumentError('name|engaged') );
+                            if ( accountDocument )
+                                return wcb( new restify.InvalidArgumentError( 'name|engaged' ) );
 
                             wcb();
                         }
@@ -95,64 +103,64 @@ var Account = function (data) {
                 },
 
                 // 3. Check group existent
-                function (wcb) {
+                function ( wcb ) {
                     if ( self.group ) {
 
                         var accountGroupToFind = new AccountGroup();
 
                         accountGroupToFind.getById(
                             self.group.id,
-                            function (err) {
-                                if (err) return wcb(err);
+                            function ( err ) {
+                                if ( err ) return wcb( err );
 
                                 wcb();
                             }
                         );
 
-                    }else{
+                    } else {
                         wcb();
                     }
                 },
 
                 // 4. Write data to DB
-                function (wcb) {
+                function ( wcb ) {
                     var dataToWriteToDb = {};
 
                     dataToWriteToDb.name = self.name;
-                    dataToWriteToDb.password = passwordHash.isHashed(self.password) ?
+                    dataToWriteToDb.password = passwordHash.isHashed( self.password ) ?
                         self.password :
-                        passwordHash.generate(self.password);
+                        passwordHash.generate( self.password );
 
                     dataToWriteToDb.group = self.group ? self.group.id : null;
                     dataToWriteToDb.individualPerms = self.individualPerms;
                     dataToWriteToDb.deleted = false;
 
-                    AccountModel.create(dataToWriteToDb, function (err, accountDocument) {
-                        if (err) return wcb(err);
-                        wcb(null, accountDocument);
-                    });
+                    AccountModel.create( dataToWriteToDb, function ( err, accountDocument ) {
+                        if ( err ) return wcb( err );
+                        wcb( null, accountDocument );
+                    } );
                 },
 
                 // 5. Return new Account object
-                function (accountDocument, wcb) {
+                function ( accountDocument, wcb ) {
 
-                    async.series([
-                            function (scb) {
+                    async.series( [
+                            function ( scb ) {
 
-                                if (accountDocument.group) {
+                                if ( accountDocument.group ) {
                                     self.group = new AccountGroup();
-                                    self.group.getById(accountDocument.group.toString(), function (err) {
-                                        if (err) return scb(err);
+                                    self.group.getById( accountDocument.group.toString(), function ( err ) {
+                                        if ( err ) return scb( err );
 
                                         scb();
-                                    });
+                                    } );
                                 } else {
                                     self.group = null;
                                     scb();
                                 }
 
                             },
-                            function (scb) {
+                            function ( scb ) {
 
                                 self.id = accountDocument._id.toString();
                                 self.name = accountDocument.name;
@@ -161,37 +169,67 @@ var Account = function (data) {
                                 self.deleted = accountDocument.deleted;
 
                                 self.perms = self.group ?
-                                    mf.mergePerms(self.group.perms, self.individualPerms) :
+                                    mf.mergePerms( self.group.perms, self.individualPerms ) :
                                     self.individualPerms;
 
                                 scb();
                             }
                         ],
-                        function (err) {
-                            if (err) return wcb(err);
+                        function ( err ) {
+                            if ( err ) return wcb( err );
                             wcb();
-                        });
+                        } );
 
                 }
             ],
-            function (err) {
-                if (err) return next(err);
+            function ( err ) {
+                if ( err ) return next( err );
 
-                next(null, self);
+                next( null, self );
             }
         );
 
 
-
     };
 
 
-    this.get = function (conditions, callback) {
-
+    /**
+     * Find one full Account object
+     *
+     * @param {object}      filter
+     * @param {function}    next
+     */
+    this.findOne = function ( filter, next ) {
     };
 
 
-    this.getOne = function (conditions, callback) {
+    /**
+     * Find one short Account object
+     *
+     * @param {object}      filter
+     * @param {function}    next
+     */
+    this.findOneShort = function ( filter, next ) {
+    };
+
+
+    /**
+     * Find many Account objects
+     *
+     * @param {object}      filter
+     * @param {function}    next
+     */
+    this.find = function ( filter, next ) {
+    };
+
+
+    /**
+     * Find many short Account objects
+     *
+     * @param {object}      filter
+     * @param {function}    next
+     */
+    this.findShort = function ( filter, next ) {
     };
 
 
@@ -199,36 +237,35 @@ var Account = function (data) {
      * Get Account by id
      *
      * @param {string}      id      Account Id to find
-     *
      * @param {function}    next    Callback(err, doc)
      */
-    this.getById = function (id, next) {
+    this.getById = function ( id, next ) {
 
         if ( !id )
-            return next( new restify.InvalidArgumentError('id|null') );
+            return next( new restify.InvalidArgumentError( 'id|null' ) );
 
-        if ( !mf.isObjectId(id) )
-            return next( new restify.InvalidArgumentError('id|not ObjectId') );
+        if ( !mf.isObjectId( id ) )
+            return next( new restify.InvalidArgumentError( 'id|not ObjectId' ) );
 
 
         AccountModel.findOne(
-            {_id: id, deleted: false},
-            function (err, accountDocument) {
-                if (err) return next(err);
-                if (!accountDocument) return next(new restify.ResourceNotFoundError('404'));
+            { _id: id, deleted: false },
+            function ( err, accountDocument ) {
+                if ( err ) return next( err );
+                if ( !accountDocument ) return next( new restify.ResourceNotFoundError( '404' ) );
 
                 var theAccountGroup = new AccountGroup();
 
                 async.series(
                     [
                         // Get AccountGroup
-                        function (scb) {
-                            if (accountDocument.group) {
+                        function ( scb ) {
+                            if ( accountDocument.group ) {
 
                                 theAccountGroup.getById(
                                     accountDocument.group.toString(),
-                                    function (err) {
-                                        if (err) return scb(err);
+                                    function ( err ) {
+                                        if ( err ) return scb( err );
 
                                         scb();
                                     }
@@ -243,7 +280,7 @@ var Account = function (data) {
                         },
 
                         // Write info into self object
-                        function(scb) {
+                        function ( scb ) {
 
                             self.id = accountDocument._id.toString();
                             self.name = accountDocument.name;
@@ -252,7 +289,7 @@ var Account = function (data) {
                             self.password = null;
 
                             self.perms = self.group ?
-                                mf.mergePerms(self.group.perms, self.individualPerms) :
+                                mf.mergePerms( self.group.perms, self.individualPerms ) :
                                 self.individualPerms;
 
                             scb();
@@ -260,9 +297,9 @@ var Account = function (data) {
                         }
                     ],
 
-                    function (err) {
-                        if (err) return next(err);
-                        next(null, self);
+                    function ( err ) {
+                        if ( err ) return next( err );
+                        next( null, self );
                     }
                 );
 
@@ -279,33 +316,33 @@ var Account = function (data) {
      *
      * @param {function}    next    callback(err, doc)
      */
-    this.getByName = function (name, next) {
+    this.getByName = function ( name, next ) {
 
         if ( !name )
-            return next( new restify.InvalidArgumentError('id|null') );
+            return next( new restify.InvalidArgumentError( 'id|null' ) );
 
         if ( typeof name != 'string' )
-            return next( new restify.InvalidArgumentError('id|not ObjectId') );
+            return next( new restify.InvalidArgumentError( 'id|not ObjectId' ) );
 
 
         AccountModel.findOne(
-            {name: name, deleted: false},
-            function (err, accountDocument) {
-                if (err) return next(err);
-                if (!accountDocument) return next(new restify.ResourceNotFoundError('404'));
+            { name: name, deleted: false },
+            function ( err, accountDocument ) {
+                if ( err ) return next( err );
+                if ( !accountDocument ) return next( new restify.ResourceNotFoundError( '404' ) );
 
                 var theAccountGroup = new AccountGroup();
 
                 async.series(
                     [
                         // Get AccountGroup
-                        function (scb) {
-                            if (accountDocument.group) {
+                        function ( scb ) {
+                            if ( accountDocument.group ) {
 
                                 theAccountGroup.getById(
                                     accountDocument.group.toString(),
-                                    function (err) {
-                                        if (err) return scb(err);
+                                    function ( err ) {
+                                        if ( err ) return scb( err );
 
                                         scb();
                                     }
@@ -320,7 +357,7 @@ var Account = function (data) {
                         },
 
                         // Write info into self object
-                        function(scb) {
+                        function ( scb ) {
 
                             self.id = accountDocument._id.toString();
                             self.name = accountDocument.name;
@@ -329,7 +366,7 @@ var Account = function (data) {
                             self.password = null;
 
                             self.perms = self.group ?
-                                mf.mergePerms(self.group.perms, self.individualPerms) :
+                                mf.mergePerms( self.group.perms, self.individualPerms ) :
                                 self.individualPerms;
 
                             scb();
@@ -337,9 +374,9 @@ var Account = function (data) {
                         }
                     ],
 
-                    function (err) {
-                        if (err) return next(err);
-                        next(null, self);
+                    function ( err ) {
+                        if ( err ) return next( err );
+                        next( null, self );
                     }
                 );
 
@@ -356,7 +393,7 @@ var Account = function (data) {
      *
      * @param {function}    next        callback(err, Account)
      */
-    this.getByToken = function (token, next) {
+    this.getByToken = function ( token, next ) {
     };
 
     /**
@@ -367,7 +404,7 @@ var Account = function (data) {
      *
      * @param {function}    next        Callback(err, doc)
      */
-    this.auth = function (username, password, next) {
+    this.auth = function ( username, password, next ) {
     };
 
 
@@ -378,7 +415,7 @@ var Account = function (data) {
      *
      * @param {function}       next      Callback(err, Account)
      */
-    this.logout = function (token, next) {
+    this.logout = function ( token, next ) {
 
     };
 
@@ -388,7 +425,7 @@ var Account = function (data) {
      *
      * @param {function}    next    callback(err, doc)
      */
-    this.logoutAll = function (next) {
+    this.logoutAll = function ( next ) {
     };
 
     /**
@@ -396,7 +433,7 @@ var Account = function (data) {
      *
      * @param {function}    next        Callback(err, doc). doc - Found Account
      */
-    this.remove = function (next) {
+    this.remove = function ( next ) {
     };
 
     /**
@@ -408,25 +445,25 @@ var Account = function (data) {
      *
      * @param {function}    next        Callback(err, newDoc). newDoc - Updated Account data
      */
-    this.update = function (next) {
+    this.update = function ( next ) {
 
-        if ( ! self.id )
-            return next( new restify.InvalidArgumentError('id|null') );
+        if ( !self.id )
+            return next( new restify.InvalidArgumentError( 'id|null' ) );
 
-        if ( ! mf.isObjectId( self.id ) )
-            return next( new restify.InvalidArgumentError('id|not ObjectId') );
+        if ( !mf.isObjectId( self.id ) )
+            return next( new restify.InvalidArgumentError( 'id|not ObjectId' ) );
 
         var accountDocument;
 
         async.series(
             [
                 // 0. Get accountDocument for validating
-                function (scb) {
+                function ( scb ) {
                     AccountModel.findOne(
-                        {_id: self.id, deleted: false},
-                        function (err, doc) {
-                            if (err) return scb(err);
-                            if (!doc) return scb( new restify.ResourceNotFoundError('id|404') );
+                        { _id: self.id, deleted: false },
+                        function ( err, doc ) {
+                            if ( err ) return scb( err );
+                            if ( !doc ) return scb( new restify.ResourceNotFoundError( 'id|404' ) );
 
                             accountDocument = doc;
                             scb();
@@ -435,7 +472,7 @@ var Account = function (data) {
                 },
 
                 // 1. is name was modified
-                function (scb) {
+                function ( scb ) {
                     if ( self.name != accountDocument.name ) {
 
                         // Check name
@@ -443,8 +480,8 @@ var Account = function (data) {
                         var testAccount = new Account();
                         testAccount.getByName(
                             self.name, // new name
-                            function (err) {
-                                if (err && err instanceof restify.ResourceNotFoundError) {
+                            function ( err ) {
+                                if ( err && err instanceof restify.ResourceNotFoundError ) {
 
                                     // not engaged
 
@@ -465,8 +502,8 @@ var Account = function (data) {
                                     // the same name is exists => this name is engaged
 
                                     if ( !err ) {
-                                        scb( new restify.InvalidArgumentError('name|engaged') );
-                                    }else{
+                                        scb( new restify.InvalidArgumentError( 'name|engaged' ) );
+                                    } else {
 
                                         // If error been called and it is not 404 error
                                         scb( err );
@@ -475,32 +512,32 @@ var Account = function (data) {
                             }
                         );
 
-                    }else{
+                    } else {
                         scb();
                     }
                 },
 
                 // 2. is group was modified
-                function (scb) {
+                function ( scb ) {
 
                     if ( self.group ) {
 
-                        if ( !( self.group instanceof AccountGroup ) || !self.group.hasOwnProperty('id') )
-                            return scb( new restify.InvalidArgumentError('group|invalid object') );
+                        if ( !( self.group instanceof AccountGroup ) || !self.group.hasOwnProperty( 'id' ) )
+                            return scb( new restify.InvalidArgumentError( 'group|invalid object' ) );
 
                         var groupId = self.group.id;
 
                         self.group = new AccountGroup();
-                        self.group.getById( groupId, function (err) {
+                        self.group.getById( groupId, function ( err ) {
 
                             if ( err && err instanceof restify.ResourceNotFoundError ) {
 
                                 // New AccountGroup wasn't find and so we can't use this
                                 // AccountGroup in Account info
 
-                                return scb( new restify.ResourceNotFoundError('group|404') );
+                                return scb( new restify.ResourceNotFoundError( 'group|404' ) );
                             }
-                            if ( err ){
+                            if ( err ) {
 
                                 // If trying to find new AccountGroup called an error, but
                                 // not 404 error, we call error with a received error
@@ -516,7 +553,7 @@ var Account = function (data) {
 
                         } );
 
-                    }else{
+                    } else {
 
                         // If we remove Account.group parameter or this Account did not
                         // ever been an AccountGroup member
@@ -532,21 +569,21 @@ var Account = function (data) {
                 },
 
                 // 3. is password was modified
-                function (scb) {
+                function ( scb ) {
 
                     // By default password not passed to the Account properties
                     // It means that if password not null, it was modified
                     if ( self.password ) {
 
-                        if ( passwordHash.isHashed(self.password) ) {
+                        if ( passwordHash.isHashed( self.password ) ) {
                             accountDocument.password = self.password;
-                        }else{
+                        } else {
                             accountDocument.password = passwordHash.generate( self.password );
                         }
 
                         scb();
 
-                    }else{
+                    } else {
 
                         // If the password is not changed, we simply fo to
                         // the next step of the series
@@ -557,22 +594,22 @@ var Account = function (data) {
                 },
 
                 // 4. is individualPerms was modified
-                function (scb) {
+                function ( scb ) {
 
                     if ( self.individualPerms != accountDocument.individualPerms ) {
 
                         // 4.1 Validating new perms
-                        if ( mf.validatePerms(self.individualPerms) ) {
+                        if ( mf.validatePerms( self.individualPerms ) ) {
                             accountDocument.individualPerms = self.individualPerms;
                             scb();
-                        }else{
+                        } else {
 
                             // if new individualPerms not been validated
 
-                            scb(new restify.InvalidArgumentError('individualPerms|invalid'));
+                            scb( new restify.InvalidArgumentError( 'individualPerms|invalid' ) );
                         }
 
-                    }else{
+                    } else {
                         scb();
                     }
 
@@ -584,9 +621,9 @@ var Account = function (data) {
 
 
                 // 6. Update accountDocument and self
-                function (scb) {
+                function ( scb ) {
 
-                    accountDocument.save(function (err, newAccountDocument) {
+                    accountDocument.save( function ( err, newAccountDocument ) {
 
                         self.group = self.group;
                         self.id = newAccountDocument._id.toString();
@@ -595,18 +632,18 @@ var Account = function (data) {
                             newAccountDocument.individualPerms : {};
                         self.password = null;
                         self.perms = self.group ?
-                            mf.mergePerms(self.group.perms, self.individualPerms) :
+                            mf.mergePerms( self.group.perms, self.individualPerms ) :
                             self.individualPerms;
 
                         scb();
 
-                    });
+                    } );
 
                 }
             ],
-            function (err) {
-                if (err) return next(err);
-                next(null, self);
+            function ( err ) {
+                if ( err ) return next( err );
+                next( null, self );
             }
         );
 
