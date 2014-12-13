@@ -224,7 +224,7 @@ var AccountGroup = function (data) {
             return next(new restify.InvalidArgumentError('id|not ObjectId'));
 
 
-        
+
         //var dataForWrite;
         var accountGroupDocument;
 

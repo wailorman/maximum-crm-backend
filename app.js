@@ -5,7 +5,7 @@ var mongoose = require('mongoose');
 var ObjectId = mongoose.Types.ObjectId;
 var randtoken = require('rand-token').suid;
 
-var someModule = require( './some-module.js');
+
 
 //var AccountGroupModel = require('./classes/account-group/account-group.js').Model;
 
@@ -37,10 +37,6 @@ server.get('/lessons', function (res, req, next) {
 
 server.listen(8080, function () {
     console.log('Maximum CRM REST API server started on port 8080');
-
-    var someArr = [];
-
-    console.log( someArr.someFunc() );
 
 });
 

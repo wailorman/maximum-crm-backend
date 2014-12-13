@@ -11,13 +11,13 @@ module.exports.is = function(variable){
     var isVariableStringObjectId = new RegExp("^[0-9a-fA-F]{24}$");
 
     isVariable.stringObjectId = typeof variable === 'string' &&
-    isVariableStringObjectId.test(variable);
+                                isVariableStringObjectId.test(variable);
 
     // not working!
     isVariable.ObjectId =       typeof variable !== 'boolean' &&
-    (!variable !== true) &&  // not null
-    variable.hasOwnProperty('toString') &&
-    isVariableStringObjectId.test(variable.toString());
+                                (!variable !== true) &&  // not null
+                                variable.hasOwnProperty('toString') &&
+                                isVariableStringObjectId.test(variable.toString());
 
 
     var isVariableStringNumber = new RegExp('^\\d+$');
@@ -35,24 +35,24 @@ module.exports.is = function(variable){
 
 
     isVariable.stringNumber =   typeof variable === 'string' &&
-    isVariableStringNumber.test(variable);
+                                isVariableStringNumber.test(variable);
 
     isVariable.Date =           variable instanceof Date;
 
     isVariable.null =           typeof variable === 'object' &&
-    typeof variable !== 'boolean' &&
-    (!variable === true);
+                                typeof variable !== 'boolean' &&
+                                (!variable === true);
 
     // some magic checking for null variable
     isVariable.object =         typeof variable === 'object' &&
-    typeof variable !== 'boolean' &&
-    (!variable !== true);
+                                typeof variable !== 'boolean' &&
+                                (!variable !== true);
 
     isVariable.undefined =      typeof variable == 'undefined';
 
 
     isVariable.string =         typeof variable !== 'undefined' &&
-    typeof variable === 'string';
+                                typeof variable === 'string';
 
     isVariable.number =         typeof variable == 'number';
 
@@ -108,31 +108,31 @@ var mergePerms = function (obj1, obj2) {
 
     /*var result;
 
-    if ( obj1 ){
+     if ( obj1 ){
 
-        result = obj1;
+     result = obj1;
 
-        if ( obj2 ) {
-            for ( var k in obj2 ){
+     if ( obj2 ) {
+     for ( var k in obj2 ){
 
-                if ( obj2.hasOwnProperty(k) ) {
-                    if ( typeof obj2[k] == 'object' ) {
-                        result[k] = mergePerms(obj1[k], obj2[k]);
-                    }
-                    if( typeof obj2[k] == 'boolean' ){
-                        result[k] = obj2[k];
-                    }
-                }else{
-                    result[k] = obj1[k];
-                }
+     if ( obj2.hasOwnProperty(k) ) {
+     if ( typeof obj2[k] == 'object' ) {
+     result[k] = mergePerms(obj1[k], obj2[k]);
+     }
+     if( typeof obj2[k] == 'boolean' ){
+     result[k] = obj2[k];
+     }
+     }else{
+     result[k] = obj1[k];
+     }
 
-            }
-        }
-    }else{
-        result = null;
-    }
+     }
+     }
+     }else{
+     result = null;
+     }
 
-    return result;*/
+     return result;*/
 
     var groupPerms = obj1;
     var individualPerms = obj2;
@@ -259,4 +259,3 @@ module.exports.validatePerms = function (perms) {
 };
 
 module.exports.ObjectId = ObjectId;
-

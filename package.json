@@ -6,8 +6,6 @@
     "async": "^0.9.0",
     "coffee-script": "^1.8.0",
     "express": "~4.9.0",
-    "maxcrm-account-group": "*",
-    "maxcrm-libs": "*",
     "mongodb": "^1.4.19",
     "mongoose": "^3.8.19",
     "password-hash": "^1.2.2",
