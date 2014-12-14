@@ -43,24 +43,17 @@ var testTemplates = {
 
                             // Use short mode
 
-                            theNewAccount.should.have.property( 'id' );
-                            theNewAccount.should.have.property( 'name' );
-                            theNewAccount.should.have.property( 'group' );
-
-                            theNewAccount.should.not.have.properties( 'perms', 'token', 'password', 'individualPerms' );
+                            theNewAccount.isShort().should.be.eql( true );
 
                         } else {
 
                             // Use full mode
 
-                            theNewAccount.should.have.property( 'id' );
-                            theNewAccount.should.have.property( 'name' );
-                            theNewAccount.should.have.property( 'group' );
-                            theNewAccount.should.have.property( 'perms' );
-                            theNewAccount.should.have.property( 'individualPerms' );
+                            theNewAccount.isFull().should.be.eql( true );
 
+                            if ( theNewAccount.hasOwnProperty( 'password' ) )
+                                passwordHash.isHashed( theNewAccount.password ).should.be.eql( true );
 
-                            theNewAccount.should.not.have.properties( 'token', 'password' );
 
                         }
 
@@ -166,7 +159,7 @@ var testTemplates = {
                 function ( filter, escb ) {
 
                     theNewAccounts = [];
-                    theNewAccounts.Account.find( filter, function ( err ) {
+                    theNewAccounts.Account[ funcName ]( filter, function ( err ) {
 
                         should.not.exist( err );
 
@@ -210,24 +203,16 @@ var testTemplates = {
 
                                 // Use short mode
 
-                                theNewAccounts[ i ].should.have.property( 'id' );
-                                theNewAccounts[ i ].should.have.property( 'name' );
-                                theNewAccounts[ i ].should.have.property( 'group' );
-
-                                theNewAccounts[ i ].should.not.have.properties( 'perms', 'token', 'password', 'individualPerms' );
+                                theNewAccount.isShort().should.be.eql( true );
 
                             } else {
 
                                 // Use full mode
 
-                                theNewAccounts[ i ].should.have.property( 'id' );
-                                theNewAccounts[ i ].should.have.property( 'name' );
-                                theNewAccounts[ i ].should.have.property( 'group' );
-                                theNewAccounts[ i ].should.have.property( 'perms' );
-                                theNewAccounts[ i ].should.have.property( 'individualPerms' );
+                                theNewAccount.isFull().should.be.eql( true );
 
-
-                                theNewAccounts[ i ].should.not.have.properties( 'token', 'password' );
+                                if ( theNewAccount.hasOwnProperty( 'password' ) )
+                                    passwordHash.isHashed( theNewAccount.password ).should.be.eql( true );
 
                             }
 
@@ -262,7 +247,7 @@ var testTemplates = {
 
                     theNewAccounts = [];
 
-                    theNewAccounts[ funcName ]( filter, function ( err ) {
+                    theNewAccounts.Account[ funcName ]( filter, function ( err ) {
 
                         should.exist( err );
 
@@ -297,7 +282,7 @@ var testTemplates = {
 
                     theNewAccounts = [];
 
-                    theNewAccount[ funcName ]( filter, function ( err ) {
+                    theNewAccount.Account[ funcName ]( filter, function ( err ) {
 
                         should.exist( err );
 
@@ -497,6 +482,142 @@ describe( 'Account module testing', function () {
 
             } );
     } );
+
+
+    describe( 'objectSize', function () {
+
+        describe( '.isShort', function () {
+
+            it( 'should detect short object', function ( done ) {
+
+                theNewAccount = new Account();
+
+                theNewAccount.id = '00000000000000000000000';
+                theNewAccount.name = 'wailorman';
+                theNewAccount.group = theNewAccountGroup;
+
+                theNewAccount.isShort().should.be.eql( true );
+
+                done();
+
+            } );
+
+            it( 'should detect not short object (not full, not short)', function ( done ) {
+
+                theNewAccount = new Account();
+
+                theNewAccount.id = '00000000000000000000000';
+                theNewAccount.name = 'wailorman';
+                theNewAccount.group = theNewAccountGroup;
+                theNewAccount.perms = {
+                    somePerm: {
+                        create: true
+                    }
+                };
+
+                theNewAccount.isShort().should.be.eql( false );
+
+                done();
+
+            } );
+
+            it( 'should detect not short object (full)', function ( done ) {
+
+                theNewAccount = new Account();
+
+                theNewAccount.id = '00000000000000000000000';
+                theNewAccount.name = 'wailorman';
+                theNewAccount.group = theNewAccountGroup;
+                theNewAccount.perms = {
+                    somePerm: {
+                        create: true
+                    }
+                };
+                theNewAccount.individualPerms = {
+                    somePerm: {
+                        create: true
+                    }
+                };
+
+                theNewAccount.isShort().should.be.eql( false );
+
+                done();
+
+            } );
+
+        } );
+
+        describe( '.isFull', function () {
+
+            it( 'should detect full object with standart properties', function ( done ) {
+
+                theNewAccount = new Account();
+
+                theNewAccount.id = '00000000000000000000000';
+                theNewAccount.name = 'wailorman';
+                theNewAccount.group = theNewAccountGroup;
+                theNewAccount.perms = {
+                    somePerm: {
+                        create: true
+                    }
+                };
+                theNewAccount.individualPerms = {
+                    somePerm: {
+                        create: true
+                    }
+                };
+
+                theNewAccount.isFull().should.be.eql( true );
+
+                done();
+
+            } );
+
+            it( 'should detect full object with other properties', function ( done ) {
+
+                theNewAccount = new Account();
+
+                theNewAccount.id = '00000000000000000000000';
+                theNewAccount.name = 'wailorman';
+                theNewAccount.group = theNewAccountGroup;
+                theNewAccount.perms = {
+                    somePerm: {
+                        create: true
+                    }
+                };
+                theNewAccount.individualPerms = {
+                    somePerm: {
+                        create: true
+                    }
+                };
+                theNewAccount.password = '123';
+                theNewAccount.token = '22345678743234567876543';
+
+
+                theNewAccount.isFull().should.be.eql( true );
+
+                done();
+
+            } );
+
+            it( 'should detect not full object without some required properties', function ( done ) {
+
+                theNewAccount = new Account();
+
+                theNewAccount.id = '00000000000000000000000';
+                theNewAccount.name = 'wailorman';
+                theNewAccount.group = theNewAccountGroup;
+
+                theNewAccount.isFull().should.be.eql( false );
+
+                done();
+
+            } );
+
+        } );
+
+    } );
+
 
     describe( '.create', function () {
 
