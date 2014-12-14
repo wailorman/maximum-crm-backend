@@ -1,26 +1,26 @@
 //var ObjectId = require('mongodb').ObjectID;
-var ObjectId = require('mongoose').Types.ObjectId;
+var ObjectId = require( 'mongoose' ).Types.ObjectId;
 
-var restify = require('restify');
-var util = require('util');
+var restify = require( 'restify' );
+var util = require( 'util' );
 
 
-module.exports.is = function(variable){
+module.exports.is = function ( variable ) {
     var isVariable = {};
 
-    var isVariableStringObjectId = new RegExp("^[0-9a-fA-F]{24}$");
+    var isVariableStringObjectId = new RegExp( "^[0-9a-fA-F]{24}$" );
 
     isVariable.stringObjectId = typeof variable === 'string' &&
-                                isVariableStringObjectId.test(variable);
+                                isVariableStringObjectId.test( variable );
 
     // not working!
-    isVariable.ObjectId =       typeof variable !== 'boolean' &&
-                                (!variable !== true) &&  // not null
-                                variable.hasOwnProperty('toString') &&
-                                isVariableStringObjectId.test(variable.toString());
+    isVariable.ObjectId = typeof variable !== 'boolean' &&
+                          (!variable !== true) &&  // not null
+                          variable.hasOwnProperty( 'toString' ) &&
+                          isVariableStringObjectId.test( variable.toString() );
 
 
-    var isVariableStringNumber = new RegExp('^\\d+$');
+    var isVariableStringNumber = new RegExp( '^\\d+$' );
 
 
     /**
@@ -29,71 +29,71 @@ module.exports.is = function(variable){
      * @typedef {string} stringObjectId
      */
 
-    var isToken = new RegExp("^[0-9a-zA-Z]{24}$");
+    var isToken = new RegExp( "^[0-9a-zA-Z]{24}$" );
 
-    isVariable.stringToken = isToken.test(variable);
+    isVariable.stringToken = isToken.test( variable );
 
 
-    isVariable.stringNumber =   typeof variable === 'string' &&
-                                isVariableStringNumber.test(variable);
+    isVariable.stringNumber = typeof variable === 'string' &&
+                              isVariableStringNumber.test( variable );
 
-    isVariable.Date =           variable instanceof Date;
+    isVariable.Date = variable instanceof Date;
 
-    isVariable.null =           typeof variable === 'object' &&
-                                typeof variable !== 'boolean' &&
-                                (!variable === true);
+    isVariable.null = typeof variable === 'object' &&
+                      typeof variable !== 'boolean' &&
+                      (!variable === true);
 
     // some magic checking for null variable
-    isVariable.object =         typeof variable === 'object' &&
-                                typeof variable !== 'boolean' &&
-                                (!variable !== true);
+    isVariable.object = typeof variable === 'object' &&
+                        typeof variable !== 'boolean' &&
+                        (!variable !== true);
 
-    isVariable.undefined =      typeof variable == 'undefined';
+    isVariable.undefined = typeof variable == 'undefined';
 
 
-    isVariable.string =         typeof variable !== 'undefined' &&
-                                typeof variable === 'string';
+    isVariable.string = typeof variable !== 'undefined' &&
+                        typeof variable === 'string';
 
-    isVariable.number =         typeof variable == 'number';
+    isVariable.number = typeof variable == 'number';
 
-    isVariable.boolean =        typeof variable == 'boolean';
+    isVariable.boolean = typeof variable == 'boolean';
 
     return {
-        stringObjectId:     isVariable.stringObjectId,
-        stringNumber:       isVariable.stringNumber,
-        Date:               isVariable.Date,
-        null:               isVariable.null,
-        object:             isVariable.object,
-        undefined:          isVariable.undefined,
-        string:             isVariable.string,
-        number:             isVariable.number,
-        boolean:            isVariable.boolean,
+        stringObjectId: isVariable.stringObjectId,
+        stringNumber:   isVariable.stringNumber,
+        Date:           isVariable.Date,
+        null:           isVariable.null,
+        object:         isVariable.object,
+        undefined:      isVariable.undefined,
+        string:         isVariable.string,
+        number:         isVariable.number,
+        boolean:        isVariable.boolean,
 
         not: {
-            stringObjectId:     ! isVariable.stringObjectId,
-            stringNumber:       ! isVariable.stringNumber,
-            Date:               ! isVariable.Date,
-            null:               ! isVariable.null,
-            object:             ! isVariable.object,
-            undefined:          ! isVariable.undefined,
-            string:             ! isVariable.string,
-            number:             ! isVariable.number,
-            boolean:            ! isVariable.boolean
+            stringObjectId: !isVariable.stringObjectId,
+            stringNumber:   !isVariable.stringNumber,
+            Date:           !isVariable.Date,
+            null:           !isVariable.null,
+            object:         !isVariable.object,
+            undefined:      !isVariable.undefined,
+            string:         !isVariable.string,
+            number:         !isVariable.number,
+            boolean:        !isVariable.boolean
         }
     };
 };
 
-module.exports.isObjectId = function (variable) {
-    var isVariableStringObjectId = new RegExp("^[0-9a-f]{24}$");
-    return typeof variable === 'string' && isVariableStringObjectId.test(variable);
+module.exports.isObjectId = function ( variable ) {
+    var isVariableStringObjectId = new RegExp( "^[0-9a-f]{24}$" );
+    return typeof variable === 'string' && isVariableStringObjectId.test( variable );
 };
 
-module.exports.isToken = function (variable) {
-    var isToken = new RegExp("^[0-9a-zA-Z]{24}$");
-    return typeof variable === 'string' && isToken.test(variable);
+module.exports.isToken = function ( variable ) {
+    var isToken = new RegExp( "^[0-9a-zA-Z]{24}$" );
+    return typeof variable === 'string' && isToken.test( variable );
 };
 
-module.exports.isNull = function (variable) {
+module.exports.isNull = function ( variable ) {
     return typeof variable != 'boolean' && (!variable != true);
 };
 
@@ -104,7 +104,7 @@ module.exports.isNull = function (variable) {
  * @param {object}      obj1    First object. Would be overwritten by second
  * @param {object}      obj2    Second object. Primary object
  */
-var mergePerms = function (obj1, obj2) {
+var mergePerms = function ( obj1, obj2 ) {
 
     /*var result;
 
@@ -137,11 +137,11 @@ var mergePerms = function (obj1, obj2) {
     var groupPerms = obj1;
     var individualPerms = obj2;
 
-    if ( !groupPerms && individualPerms && typeof individualPerms == 'object' ){
+    if ( !groupPerms && individualPerms && typeof individualPerms == 'object' ) {
         return individualPerms;
     }
 
-    if ( !individualPerms && groupPerms && typeof groupPerms == 'object' ){
+    if ( !individualPerms && groupPerms && typeof groupPerms == 'object' ) {
         return groupPerms;
     }
 
@@ -153,25 +153,25 @@ var mergePerms = function (obj1, obj2) {
 
     if ( groupPerms && typeof groupPerms == 'object' ) {
         result = groupPerms;
-    }else{
+    } else {
         result = {};
     }
 
 
     for ( var i in individualPerms ) {
 
-        if ( typeof individualPerms[i] == 'object' ) {
+        if ( typeof individualPerms[ i ] == 'object' ) {
 
-            if ( typeof groupPerms[i] != 'object' ) {
-                groupPerms[i] = {};
+            if ( typeof groupPerms[ i ] != 'object' ) {
+                groupPerms[ i ] = {};
             }
 
-            result[i] = mergePerms( groupPerms[i], individualPerms[i] );
+            result[ i ] = mergePerms( groupPerms[ i ], individualPerms[ i ] );
         }
 
-        if ( typeof individualPerms[i] == 'boolean') {
+        if ( typeof individualPerms[ i ] == 'boolean' ) {
 
-            result[i] = individualPerms[i];
+            result[ i ] = individualPerms[ i ];
 
         }
 
@@ -185,18 +185,18 @@ module.exports.mergePerms = mergePerms;
 
 
 // TODO write unit tests for validatePerms
-module.exports.validatePerms = function (perms) {
+module.exports.validatePerms = function ( perms ) {
 
-    function checkObjectLevel(obj) {
-        for ( var i in obj ){
+    function checkObjectLevel( obj ) {
+        for ( var i in obj ) {
 
-            if ( obj.hasOwnProperty(i) && obj[i] ) {
+            if ( obj.hasOwnProperty( i ) && obj[ i ] ) {
 
                 // If it's next level...
                 // Recursive call self to check next level
-                if ( typeof obj[i] === 'object' ) {
+                if ( typeof obj[ i ] === 'object' ) {
 
-                    if ( checkObjectLevel(obj[i]) ) {
+                    if ( checkObjectLevel( obj[ i ] ) ) {
 
                         // It's correct perm. property
                         // Continue checking...
@@ -204,7 +204,7 @@ module.exports.validatePerms = function (perms) {
 
                         continue;
 
-                    }else{
+                    } else {
 
                         // Some of props in the next level
                         // is invalid. Break checking.
@@ -219,7 +219,7 @@ module.exports.validatePerms = function (perms) {
 
 
                 // If it's normal permission value (boolean)
-                if ( typeof obj[i] === 'boolean' ) {
+                if ( typeof obj[ i ] === 'boolean' ) {
 
                     // Continue checking
 
@@ -235,7 +235,7 @@ module.exports.validatePerms = function (perms) {
 
                 return false;
 
-            }else{
+            } else {
 
                 // Object property is null.
                 // So, it can be a permission.
@@ -254,8 +254,23 @@ module.exports.validatePerms = function (perms) {
         return false;
     }
 
-    return checkObjectLevel(perms);
+    return checkObjectLevel( perms );
 
+};
+
+module.exports.isInArray = function ( varToFind, array ) {
+
+    for ( var i in array ) {
+
+        if ( array.hasOwnProperty( i ) && array[ i ] === varToFind ) {
+
+            return true;
+
+        }
+
+    }
+
+    return false;
 };
 
 module.exports.ObjectId = ObjectId;
