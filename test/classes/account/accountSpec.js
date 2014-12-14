@@ -545,11 +545,24 @@ describe( 'Account module testing', function () {
 
             } );
 
+            it( 'should detect short object without group as short object', function (done) {
+
+                theNewAccount = new Account();
+
+                theNewAccount.id = '00000000000000000000000';
+                theNewAccount.name = 'wailorman';
+
+                theNewAccount.isShort().should.be.eql( true );
+
+                done();
+
+            } );
+
         } );
 
         describe( '.isFull', function () {
 
-            it( 'should detect full object with standart properties', function ( done ) {
+            it( 'should detect full object with std properties', function ( done ) {
 
                 theNewAccount = new Account();
 
@@ -607,6 +620,33 @@ describe( 'Account module testing', function () {
                 theNewAccount.id = '00000000000000000000000';
                 theNewAccount.name = 'wailorman';
                 theNewAccount.group = theNewAccountGroup;
+
+                theNewAccount.isFull().should.be.eql( false );
+
+                done();
+
+            } );
+
+            it( 'should detect object with id, name, perms properties only as full object', function ( done ) {
+
+                theNewAccount = new Account();
+
+                theNewAccount.id = '00000000000000000000000';
+                theNewAccount.name = 'wailorman';
+                theNewAccount.perms = {};
+
+                theNewAccount.isFull().should.be.eql( true );
+
+                done();
+
+            } );
+
+            it( 'Account object with id and name only is not full', function (done) {
+
+                theNewAccount = new Account();
+
+                theNewAccount.id = '00000000000000000000000';
+                theNewAccount.name = 'wailorman';
 
                 theNewAccount.isFull().should.be.eql( false );
 
@@ -1213,6 +1253,46 @@ describe( 'Account module testing', function () {
 
         } );
 
+        it( 'should find all Accounts by passing empty filter', function ( done ) {
+
+            async.times( 3, function ( tcb ) {
+
+                // First - create three Accounts with same group
+
+                var acc = new Account();
+
+                acc.create( {
+                    name: 'severalFull' + n,
+                    password:        '123',
+                    group:           theNewAccountGroup,
+                    individualPerms: {
+                        hall: {
+                            create: true
+                        }
+                    }
+                }, function ( err ) {
+
+                    should.not.exist( err );
+                    tcb();
+
+                } );
+
+
+            }, function () {
+
+                // Second - find them
+
+                testTemplates.find.shouldFind(
+                    'find',
+                    [ {} ],
+                    3,
+                    done
+                );
+
+            } );
+
+        } );
+
         it( 'should find full one by id, name', function ( done ) {
 
             testTemplates.find.shouldFind( 'find',
@@ -1303,6 +1383,46 @@ describe( 'Account module testing', function () {
 
             reCreate.Accounts( function () {
                 done();
+            } );
+
+        } );
+
+        it( 'should find all Accounts by passing empty filter', function ( done ) {
+
+            async.times( 3, function ( tcb ) {
+
+                // First - create three Accounts with same group
+
+                var acc = new Account();
+
+                acc.create( {
+                    name: 'severalFull' + n,
+                    password:        '123',
+                    group:           theNewAccountGroup,
+                    individualPerms: {
+                        hall: {
+                            create: true
+                        }
+                    }
+                }, function ( err ) {
+
+                    should.not.exist( err );
+                    tcb();
+
+                } );
+
+
+            }, function () {
+
+                // Second - find them
+
+                testTemplates.find.shouldFind(
+                    'findShort',
+                    [ {} ],
+                    3,
+                    done
+                );
+
             } );
 
         } );
