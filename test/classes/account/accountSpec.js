@@ -12,9 +12,310 @@ var AccountGroup = require( '../../../classes/account-group/account-group.js' );
 var AccountGroupModel = require( '../../../classes/account-group/account-group-model.js' ).AccountGroupModel;
 
 
-var theNewAccount, theNewAccounts, theNewAccountGroup;
+var theNewAccount, theNewAccounts, theNewAccountGroup, theNewAccountArguments;
 
-var testTemplates;
+var testTemplates = {
+
+    findOne: {
+        /**
+         * Account.findOne[] test template
+         *
+         * @param {string}      funcName        Name of a function to test. Is funcName contain string 'short', template
+         *                                      will work with short object mode
+         *
+         * @param {Array}       filters         Array of parameters to pass
+         *
+         * @param {function}    done            callback
+         */
+        shouldFind: function ( funcName, filters, done ) {
+
+            async.eachSeries(
+                filters,
+                function ( filter, escb ) {
+
+                    theNewAccount = new Account();
+
+                    theNewAccount[ funcName ]( filter, function ( err ) {
+
+                        should.not.exist( err );
+
+                        if ( funcName.match( /short/igm ) ) {
+
+                            // Use short mode
+
+                            theNewAccount.should.have.property( 'id' );
+                            theNewAccount.should.have.property( 'name' );
+                            theNewAccount.should.have.property( 'group' );
+
+                            theNewAccount.should.not.have.properties( 'perms', 'token', 'password', 'individualPerms' );
+
+                        } else {
+
+                            // Use full mode
+
+                            theNewAccount.should.have.property( 'id' );
+                            theNewAccount.should.have.property( 'name' );
+                            theNewAccount.should.have.property( 'group' );
+                            theNewAccount.should.have.property( 'perms' );
+                            theNewAccount.should.have.property( 'individualPerms' );
+
+
+                            theNewAccount.should.not.have.properties( 'token', 'password' );
+
+                        }
+
+                        escb();
+
+                    } );
+
+                },
+                function () {
+                    done();
+                }
+            );
+
+
+        },
+
+        /**
+         * Account.findOne[] test template. Should return 404 when we trying to call passed func with passed params
+         *
+         * @param {string}      funcName        Name of the function to test
+         *
+         * @param {Array}       filters         Array of parameters to pass
+         *
+         * @param {function}    done            callback
+         */
+        shouldReturn404: function ( funcName, filters, done ) {
+
+            async.eachSeries(
+                filters,
+                function ( filter, escb ) {
+
+                    theNewAccount = new Account();
+
+                    theNewAccount[ funcName ]( filter, function ( err ) {
+
+                        should.exist( err );
+
+                        err.should.be.an.instanceof( restify.ResourceNotFoundError );
+
+                        escb();
+
+                    } );
+
+                },
+                function () {
+                    done();
+                }
+            );
+
+        },
+
+        /**
+         * Account.findOne[] test template. Should call error when we trying to call passed func with passed params
+         *
+         * @param {string}      funcName        Name of the function to test
+         *
+         * @param {Array}       filters         Array of parameters to pass
+         *
+         * @param {function}    done            callback
+         */
+        shouldCallErr: function ( funcName, filters, done ) {
+
+            async.eachSeries(
+                filters,
+                function ( filter, escb ) {
+
+                    theNewAccount = new Account();
+
+                    theNewAccount[ funcName ]( filter, function ( err ) {
+
+                        should.exist( err );
+
+                        escb();
+
+                    } );
+
+                },
+                function () {
+                    done();
+                }
+            );
+
+        }
+    },
+    find:    {
+
+        /**
+         * Account.find[] test template. Should call error when we trying to call passed func with passed params
+         *
+         * @param {string}          funcName                    Function name
+         *
+         * @param {Array}           filters                     Array of parameters objects
+         *
+         * @param {string|int}      expectedNumberOfObjects     String: one, several, many, much
+         *                                                      Integer: number
+         *
+         * @param {function}        done                        callback
+         */
+        shouldFind: function ( funcName, filters, expectedNumberOfObjects, done ) {
+
+            async.eachSeries(
+                filters,
+                function ( filter, escb ) {
+
+                    theNewAccounts = [];
+                    theNewAccounts.Account.find( filter, function ( err ) {
+
+                        should.not.exist( err );
+
+                        if ( typeof expectedNumberOfObjects === 'string' && expectedNumberOfObjects.match( /(one)/igm ) ) {
+
+                            theNewAccounts.length.should.be.eql( 1 );
+
+                        }
+                        else {
+
+                            if ( typeof expectedNumberOfObjects === 'string' && expectedNumberOfObjects.match( /(several|many|much)/igm ) ) {
+
+                                theNewAccounts.length.should.be.greaterThan( 0 );
+
+                            } else {
+
+                                if ( typeof expectedNumberOfObjects === 'number' ) {
+
+                                    theNewAccounts.length.should.be.eql( expectedNumberOfObjects );
+
+                                } else {
+
+                                    theNewAccounts.length.should.be.greaterThan( 0 );
+
+                                }
+
+                            }
+
+                        }
+
+
+                        var shortMode = funcName.match( /short/igm );
+
+
+                        for ( var i in theNewAccounts ) {
+
+                            if ( !theNewAccounts.hasOwnProperty( i ) )
+                                continue;
+
+                            if ( shortMode ) {
+
+                                // Use short mode
+
+                                theNewAccounts[ i ].should.have.property( 'id' );
+                                theNewAccounts[ i ].should.have.property( 'name' );
+                                theNewAccounts[ i ].should.have.property( 'group' );
+
+                                theNewAccounts[ i ].should.not.have.properties( 'perms', 'token', 'password', 'individualPerms' );
+
+                            } else {
+
+                                // Use full mode
+
+                                theNewAccounts[ i ].should.have.property( 'id' );
+                                theNewAccounts[ i ].should.have.property( 'name' );
+                                theNewAccounts[ i ].should.have.property( 'group' );
+                                theNewAccounts[ i ].should.have.property( 'perms' );
+                                theNewAccounts[ i ].should.have.property( 'individualPerms' );
+
+
+                                theNewAccounts[ i ].should.not.have.properties( 'token', 'password' );
+
+                            }
+
+                        }
+
+                        escb();
+
+                    } );
+
+                },
+                function () {
+                    done();
+                }
+            );
+
+        },
+
+        /**
+         * Account.find[] test template. Should return 404 when we trying to call passed func with passed params
+         *
+         * @param {string}      funcName        Name of the function to test
+         *
+         * @param {Array}       filters         Array of parameters to pass
+         *
+         * @param {function}    done            callback
+         */
+        shouldReturn404: function ( funcName, filters, done ) {
+
+            async.eachSeries(
+                filters,
+                function ( filter, escb ) {
+
+                    theNewAccounts = [];
+
+                    theNewAccounts[ funcName ]( filter, function ( err ) {
+
+                        should.exist( err );
+
+                        err.should.be.an.instanceof( restify.ResourceNotFoundError );
+
+                        escb();
+
+                    } );
+
+                },
+                function () {
+                    done();
+                }
+            );
+
+        },
+
+        /**
+         * Account.find[] test template. Should call error when we trying to call passed func with passed params
+         *
+         * @param {string}      funcName        Name of the function to test
+         *
+         * @param {Array}       filters         Array of parameters to pass
+         *
+         * @param {function}    done            callback
+         */
+        shouldCallErr: function ( funcName, filters, done ) {
+
+            async.eachSeries(
+                filters,
+                function ( filter, escb ) {
+
+                    theNewAccounts = [];
+
+                    theNewAccount[ funcName ]( filter, function ( err ) {
+
+                        should.exist( err );
+
+                        escb();
+
+                    } );
+
+                },
+                function () {
+                    done();
+                }
+            );
+
+        }
+
+    }
+
+};
 
 
 var cleanUp = {
@@ -52,7 +353,6 @@ var cleanUp = {
     }
 };
 
-var theNewAccountArguments;
 var reCreate = {
 
     Accounts: function ( next ) {
@@ -223,25 +523,28 @@ describe( 'Account module testing', function () {
 
                     // 3. Create new AccountGroup
                     function ( scb ) {
-                        theNewAccountGroup = new AccountGroup( { name: 'some_group' } );
-                        theNewAccountGroup.create( function ( err ) {
-                            if ( err ) return scb( err );
-                            scb();
-                        } );
+                        theNewAccountGroup = new AccountGroup();
+                        theNewAccountGroup.create( { name: 'some_group' },
+                            function ( err ) {
+                                if ( err ) return scb( err );
+                                scb();
+                            } );
                     },
 
 
                     // 4. Create new Account
                     function ( scb ) {
-                        theNewAccount = new Account( {
-                            name:     'user123',
-                            password: '123',
-                            group:    theNewAccountGroup
-                        } );
-                        theNewAccount.create( function ( err ) {
-                            if ( err ) return scb( err );
-                            scb();
-                        } );
+                        theNewAccount = new Account();
+                        theNewAccount.create(
+                            {
+                                name:     'user123',
+                                password: '123',
+                                group:    theNewAccountGroup
+                            },
+                            function ( err ) {
+                                if ( err ) return scb( err );
+                                scb();
+                            } );
                     }
                 ],
                 function ( err ) {
@@ -309,49 +612,49 @@ describe( 'Account module testing', function () {
                 ],
                 function ( accountData, eachCallback ) {
 
-                    theNewAccount = new Account( accountData );
+                    theNewAccount = new Account();
 
-                    theNewAccount.create( function ( err, newAccount ) {
+                    theNewAccount.create( accountData, function ( err ) {
                         should.not.exist( err );
 
                         // id
-                        newAccount.should.have.property( 'id' );
-                        newAccount.id.should.be.type( 'string' );
-                        mf.isObjectId( newAccount.id ).should.eql( true );
+                        theNewAccount.should.have.property( 'id' );
+                        theNewAccount.id.should.be.type( 'string' );
+                        mf.isObjectId( theNewAccount.id ).should.eql( true );
 
 
                         // name
-                        newAccount.should.have.property( 'name' );
-                        newAccount.name.should.be.type( 'string' );
-                        newAccount.name.should.eql( accountData.name );
+                        theNewAccount.should.have.property( 'name' );
+                        theNewAccount.name.should.be.type( 'string' );
+                        theNewAccount.name.should.eql( accountData.name );
 
 
                         // password
-                        newAccount.should.have.property( 'password' );
-                        newAccount.password.should.be.type( 'string' );
-                        passwordHash.isHashed( newAccount.password ).should.eql( true );
+                        theNewAccount.should.have.property( 'password' );
+                        theNewAccount.password.should.be.type( 'string' );
+                        passwordHash.isHashed( theNewAccount.password ).should.eql( true );
 
                         // individualPerms
                         if ( accountData.individualPerms ) {
-                            newAccount.should.have.property( 'individualPerms' );
+                            theNewAccount.should.have.property( 'individualPerms' );
 
-                            newAccount.individualPerms.should.eql( accountData.individualPerms );
+                            theNewAccount.individualPerms.should.eql( accountData.individualPerms );
                         }
 
 
                         // group
                         if ( accountData.group ) {
-                            newAccount.should.have.property( 'group' );
+                            theNewAccount.should.have.property( 'group' );
 
                             //newAccount.group.should.have.properties('id', 'name', 'perms');
-                            newAccount.group.id.should.eql( accountData.group.id );
-                            newAccount.group.deleted.should.eql( false );
+                            theNewAccount.group.id.should.eql( accountData.group.id );
+                            theNewAccount.group.deleted.should.eql( false );
 
-                            newAccount.group.should.be.instanceof( AccountGroup );
+                            theNewAccount.group.should.be.instanceof( AccountGroup );
                         }
 
 
-                        newAccount.should.be.instanceof( Account );
+                        theNewAccount.should.be.instanceof( Account );
 
 
                         eachCallback();
@@ -402,9 +705,9 @@ describe( 'Account module testing', function () {
                 ],
                 function ( accountData, eachSeriesCallback ) {
 
-                    theNewAccount = new Account( accountData );
+                    theNewAccount = new Account();
 
-                    theNewAccount.create( function ( err ) {
+                    theNewAccount.create( accountData, function ( err ) {
                         should.exist( err );
                         eachSeriesCallback();
                     } );
@@ -425,12 +728,12 @@ describe( 'Account module testing', function () {
                 password: "123"
             };
 
-            theNewAccount = new Account( newAccData );
+            theNewAccount = new Account();
 
-            theNewAccount.create( function ( err ) {
+            theNewAccount.create( newAccData, function ( err ) {
                 should.not.exist( err );
 
-                theNewAccount.create( function ( err ) {
+                theNewAccount.create( newAccData, function ( err ) {
                     should.exist( err );
                     done();
                 } );
@@ -451,20 +754,21 @@ describe( 'Account module testing', function () {
                 [
                     // 1. Create AccountGroup
                     function ( scb ) {
-                        theNewAccountGroup = new AccountGroup( {
-                            name:  'mergeAccountGroup',
-                            perms: {
-                                hall:  {
-                                    create: true
-                                },
-                                coach: true
-                            }
-                        } );
+                        theNewAccountGroup = new AccountGroup();
 
-                        theNewAccountGroup.create( function ( err ) {
-                            if ( err ) return scb( err );
-                            scb();
-                        } );
+                        theNewAccountGroup.create( {
+                                name:  'mergeAccountGroup',
+                                perms: {
+                                    hall:  {
+                                        create: true
+                                    },
+                                    coach: true
+                                }
+                            },
+                            function ( err ) {
+                                if ( err ) return scb( err );
+                                scb();
+                            } );
                     },
 
 
@@ -477,74 +781,77 @@ describe( 'Account module testing', function () {
                                 // 1st variant
                                 function ( pcb ) {
 
-                                    var someNewAccount = new Account( {
-                                        name:            'mergeAccount',
-                                        password:        '123',
-                                        group:           theNewAccountGroup,
-                                        individualPerms: {
-                                            hall:   {
-                                                create:  false,
-                                                someObj: {
-                                                    anotherProp:     true,
-                                                    anotherEmptyObj: {},
-                                                    anotherObj:      {
-                                                        lol4ik: true
+                                    var someNewAccount = new Account();
+
+                                    someNewAccount.create( {
+                                            name:            'mergeAccount',
+                                            password:        '123',
+                                            group:           theNewAccountGroup,
+                                            individualPerms: {
+                                                hall:   {
+                                                    create:  false,
+                                                    someObj: {
+                                                        anotherProp:     true,
+                                                        anotherEmptyObj: {},
+                                                        anotherObj:      {
+                                                            lol4ik: true
+                                                        }
+                                                    }
+                                                },
+                                                lesson: {
+                                                    edit:        true,
+                                                    emptyObject: {},
+                                                    object:      {
+                                                        prop: true
                                                     }
                                                 }
-                                            },
-                                            lesson: {
-                                                edit:        true,
-                                                emptyObject: {},
-                                                object:      {
-                                                    prop: true
-                                                }
                                             }
-                                        }
-                                    } );
-
-                                    someNewAccount.create( function ( err ) {
-                                        if ( err ) return pcb( err );
-                                        pcb( null, someNewAccount.perms );
-                                    } );
+                                        },
+                                        function ( err ) {
+                                            if ( err ) return pcb( err );
+                                            pcb( null, someNewAccount.perms );
+                                        } );
 
                                 },
 
                                 // 2nd variant
                                 function ( pcb ) {
 
-                                    var someNewAccount = new Account( {
-                                        name:            'mergeAccount',
-                                        password:        '123',
-                                        individualPerms: {
-                                            hall:   {
-                                                create: false
-                                            },
-                                            lesson: {
-                                                edit: true
-                                            }
-                                        }
-                                    } );
+                                    var someNewAccount = new Account();
 
-                                    someNewAccount.create( function ( err ) {
-                                        if ( err ) return pcb( err );
-                                        pcb( null, someNewAccount.perms );
-                                    } );
+                                    someNewAccount.create( {
+                                            name:            'mergeAccount',
+                                            password:        '123',
+                                            individualPerms: {
+                                                hall:   {
+                                                    create: false
+                                                },
+                                                lesson: {
+                                                    edit: true
+                                                }
+                                            }
+                                        },
+                                        function ( err ) {
+                                            if ( err ) return pcb( err );
+                                            pcb( null, someNewAccount.perms );
+                                        } );
 
                                 },
 
                                 // 3rd variant
                                 function ( pcb ) {
 
-                                    var someNewAccount = new Account( {
-                                        name:     'mergeAccount',
-                                        password: '123',
-                                        group:    theNewAccountGroup
-                                    } );
+                                    var someNewAccount = new Account();
 
-                                    someNewAccount.create( function ( err ) {
-                                        if ( err ) return pcb( err );
-                                        pcb( null, someNewAccount.perms );
-                                    } );
+                                    someNewAccount.create( {
+                                            name:     'mergeAccount',
+                                            password: '123',
+                                            group:    theNewAccountGroup
+                                        },
+                                        function ( err ) {
+                                            if ( err ) return pcb( err );
+                                            pcb( null, someNewAccount.perms );
+                                        } );
 
                                 }
                             ],
@@ -619,11 +926,12 @@ describe( 'Account module testing', function () {
             theNewAccountGroup.remove( function ( err ) {
                 should.not.exist( err );
 
-                theNewAccount = new Account( newAccData );
-                theNewAccount.create( function ( err ) {
+                theNewAccount = new Account();
+                theNewAccount.create( newAccData, function ( err ) {
                     should.exist( err );
 
-                    AccountGroup.create(
+                    theNewAccountGroup = new AccountGroup();
+                    theNewAccountGroup.create(
                         {
                             name:  'Test New Group',
                             perms: {
@@ -635,7 +943,7 @@ describe( 'Account module testing', function () {
                         function ( err, newGroup ) {
                             should.not.exist( err );
 
-                            theNewAccountGroup = newGroup;
+                            //theNewAccountGroup = newGroup;
 
                             done();
                         }
@@ -646,309 +954,6 @@ describe( 'Account module testing', function () {
         } );
 
     } );
-
-
-    testTemplates.findOne = {
-
-        /**
-         * Account.findOne[] test template
-         *
-         * @param {string}      funcName        Name of a function to test. Is funcName contain string 'short', template
-         *                                      will work with short object mode
-         *
-         * @param {Array}       filters         Array of parameters to pass
-         *
-         * @param {function}    done            callback
-         */
-        shouldFind: function ( funcName, filters, done ) {
-
-            async.eachSeries(
-                filters,
-                function ( filter, escb ) {
-
-                    theNewAccount = new Account();
-
-                    theNewAccount[ funcName ]( filter, function ( err ) {
-
-                        should.not.exist( err );
-
-                        if ( funcName.match( /short/igm ) ) {
-
-                            // Use short mode
-
-                            theNewAccount.should.have.property( 'id' );
-                            theNewAccount.should.have.property( 'name' );
-                            theNewAccount.should.have.property( 'group' );
-
-                            theNewAccount.should.not.have.properties( 'perms', 'token', 'password', 'individualPerms' );
-
-                        } else {
-
-                            // Use full mode
-
-                            theNewAccount.should.have.property( 'id' );
-                            theNewAccount.should.have.property( 'name' );
-                            theNewAccount.should.have.property( 'group' );
-                            theNewAccount.should.have.property( 'perms' );
-                            theNewAccount.should.have.property( 'individualPerms' );
-
-
-                            theNewAccount.should.not.have.properties( 'token', 'password' );
-
-                        }
-
-                        escb();
-
-                    } );
-
-                },
-                function () {
-                    done();
-                }
-            );
-
-
-        },
-
-        /**
-         * Account.findOne[] test template. Should return 404 when we trying to call passed func with passed params
-         *
-         * @param {string}      funcName        Name of the function to test
-         *
-         * @param {Array}       filters         Array of parameters to pass
-         *
-         * @param {function}    done            callback
-         */
-        shouldReturn404: function ( funcName, filters, done ) {
-
-            async.eachSeries(
-                filters,
-                function ( filter, escb ) {
-
-                    theNewAccount = new Account();
-
-                    theNewAccount[ funcName ]( filter, function ( err ) {
-
-                        should.exist( err );
-
-                        err.should.be.an.instanceof( restify.ResourceNotFoundError );
-
-                        escb();
-
-                    } );
-
-                },
-                function () {
-                    done();
-                }
-            );
-
-        },
-
-        /**
-         * Account.findOne[] test template. Should call error when we trying to call passed func with passed params
-         *
-         * @param {string}      funcName        Name of the function to test
-         *
-         * @param {Array}       filters         Array of parameters to pass
-         *
-         * @param {function}    done            callback
-         */
-        shouldCallErr: function ( funcName, filters, done ) {
-
-            async.eachSeries(
-                filters,
-                function ( filter, escb ) {
-
-                    theNewAccount = new Account();
-
-                    theNewAccount[ funcName ]( filter, function ( err ) {
-
-                        should.exist( err );
-
-                        escb();
-
-                    } );
-
-                },
-                function () {
-                    done();
-                }
-            );
-
-        }
-
-    };
-
-    testTemplates.find = {
-
-        /**
-         * Account.find[] test template. Should call error when we trying to call passed func with passed params
-         *
-         * @param {string}          funcName                    Function name
-         *
-         * @param {Array}           filters                     Array of parameters objects
-         *
-         * @param {string|int}      expectedNumberOfObjects     String: one, several, many, much
-         *                                                      Integer: number
-         *
-         * @param {function}        done                        callback
-         */
-        shouldFind: function ( funcName, filters, expectedNumberOfObjects, done ) {
-
-            async.eachSeries(
-                filters,
-                function ( filter, escb ) {
-
-                    theNewAccounts = [];
-                    theNewAccounts.Account.find( filter, function ( err ) {
-
-                        should.not.exist( err );
-
-                        if ( typeof expectedNumberOfObjects === 'string' && expectedNumberOfObjects.match( /(one)/igm ) ) {
-
-                            theNewAccounts.length.should.be.eql( 1 );
-
-                        }
-                        else {
-
-                            if ( typeof expectedNumberOfObjects === 'string' && expectedNumberOfObjects.match( /(several|many|much)/igm ) ) {
-
-                                theNewAccounts.length.should.be.greaterThan( 0 );
-
-                            } else {
-
-                                if ( typeof expectedNumberOfObjects === 'number' ) {
-
-                                    theNewAccounts.length.should.be.eql( expectedNumberOfObjects );
-
-                                } else {
-
-                                    theNewAccounts.length.should.be.greaterThan( 0 );
-
-                                }
-
-                            }
-
-                        }
-
-
-                        var shortMode = funcName.match( /short/igm );
-
-
-                        for ( var i in theNewAccounts ) {
-
-                            if ( !theNewAccounts.hasOwnProperty( i ) )
-                                continue;
-
-                            if ( shortMode ) {
-
-                                // Use short mode
-
-                                theNewAccounts[ i ].should.have.property( 'id' );
-                                theNewAccounts[ i ].should.have.property( 'name' );
-                                theNewAccounts[ i ].should.have.property( 'group' );
-
-                                theNewAccounts[ i ].should.not.have.properties( 'perms', 'token', 'password', 'individualPerms' );
-
-                            } else {
-
-                                // Use full mode
-
-                                theNewAccounts[ i ].should.have.property( 'id' );
-                                theNewAccounts[ i ].should.have.property( 'name' );
-                                theNewAccounts[ i ].should.have.property( 'group' );
-                                theNewAccounts[ i ].should.have.property( 'perms' );
-                                theNewAccounts[ i ].should.have.property( 'individualPerms' );
-
-
-                                theNewAccounts[ i ].should.not.have.properties( 'token', 'password' );
-
-                            }
-
-                        }
-
-                        escb();
-
-                    } );
-
-                },
-                function () {
-                    done();
-                }
-            );
-
-        },
-
-        /**
-         * Account.find[] test template. Should return 404 when we trying to call passed func with passed params
-         *
-         * @param {string}      funcName        Name of the function to test
-         *
-         * @param {Array}       filters         Array of parameters to pass
-         *
-         * @param {function}    done            callback
-         */
-        shouldReturn404: function ( funcName, filters, done ) {
-
-            async.eachSeries(
-                filters,
-                function ( filter, escb ) {
-
-                    theNewAccounts = [];
-
-                    theNewAccounts[ funcName ]( filter, function ( err ) {
-
-                        should.exist( err );
-
-                        err.should.be.an.instanceof( restify.ResourceNotFoundError );
-
-                        escb();
-
-                    } );
-
-                },
-                function () {
-                    done();
-                }
-            );
-
-        },
-
-        /**
-         * Account.find[] test template. Should call error when we trying to call passed func with passed params
-         *
-         * @param {string}      funcName        Name of the function to test
-         *
-         * @param {Array}       filters         Array of parameters to pass
-         *
-         * @param {function}    done            callback
-         */
-        shouldCallErr: function ( funcName, filters, done ) {
-
-            async.eachSeries(
-                filters,
-                function ( filter, escb ) {
-
-                    theNewAccounts = [];
-
-                    theNewAccount[ funcName ]( filter, function ( err ) {
-
-                        should.exist( err );
-
-                        escb();
-
-                    } );
-
-                },
-                function () {
-                    done();
-                }
-            );
-
-        }
-
-    };
 
 
     describe( '.findOneShort', function () {
@@ -963,6 +968,7 @@ describe( 'Account module testing', function () {
         } );
 
         it( 'should find short by id, name, group', function ( done ) {
+
 
             testTemplates.findOne.shouldFind( 'findOneShort', [
                 { id: theNewAccount.id },
@@ -1297,9 +1303,10 @@ describe( 'Account module testing', function () {
                 // group
                 function ( scb ) {
                     // First, create new group
-                    var newGroupForUpdate = new AccountGroup( { name: 'groupForUpdate' } );
+                    var newGroupForUpdate = new AccountGroup();
 
                     newGroupForUpdate.create(
+                        { name: 'groupForUpdate' },
                         function ( err ) {
                             should.not.exist( err );
 
@@ -1452,14 +1459,15 @@ describe( 'Account module testing', function () {
                 // Create testAccount with name wailormanEx1
                 function ( scb ) {
 
-                    testAccount = new Account( { name: 'wailormanEx1', password: '123' } );
-                    testAccount.create( function ( err, doc ) {
-                        should.not.exist( err );
+                    testAccount = new Account();
+                    testAccount.create( { name: 'wailormanEx1', password: '123' },
+                        function ( err, doc ) {
+                            should.not.exist( err );
 
-                        testAccount = doc;
+                            testAccount = doc;
 
-                        scb();
-                    } );
+                            scb();
+                        } );
 
                 },
 
@@ -1499,24 +1507,25 @@ describe( 'Account module testing', function () {
                 // Create a new Account for tests
                 function () {
 
-                    theNewAccount = new Account( {
-                        name:            'wailormanRemove',
-                        password:        '123',
-                        group:           theNewAccountGroup,
-                        individualPerms: {
-                            coaches: {
-                                create: true
+                    theNewAccount = new Account();
+
+                    theNewAccount.create( {
+                            name:            'wailormanRemove',
+                            password:        '123',
+                            group:           theNewAccountGroup,
+                            individualPerms: {
+                                coaches: {
+                                    create: true
+                                }
                             }
-                        }
-                    } );
+                        },
+                        function ( err, createdAccount ) {
+                            should.not.exist( err );
 
-                    theNewAccount.create( function ( err, createdAccount ) {
-                        should.not.exist( err );
+                            theNewAccount = createdAccount;
 
-                        theNewAccount = createdAccount;
-
-                        done();
-                    } );
+                            done();
+                        } );
 
                 }
             ] );
@@ -1597,24 +1606,25 @@ describe( 'Account module testing', function () {
                 // Create a new Account for tests
                 function () {
 
-                    theNewAccount = new Account( {
-                        name:            'wailormanAuth',
-                        password:        '123',
-                        group:           theNewAccountGroup,
-                        individualPerms: {
-                            coaches: {
-                                create: true
+                    theNewAccount = new Account();
+
+                    theNewAccount.create( {
+                            name:            'wailormanAuth',
+                            password:        '123',
+                            group:           theNewAccountGroup,
+                            individualPerms: {
+                                coaches: {
+                                    create: true
+                                }
                             }
-                        }
-                    } );
+                        },
+                        function ( err, createdAccount ) {
+                            should.not.exist( err );
 
-                    theNewAccount.create( function ( err, createdAccount ) {
-                        should.not.exist( err );
+                            theNewAccount = createdAccount;
 
-                        theNewAccount = createdAccount;
-
-                        done();
-                    } );
+                            done();
+                        } );
 
                 }
             ] );
@@ -1761,7 +1771,9 @@ describe( 'Account module testing', function () {
                 // Create a new Account for tests
                 function () {
 
-                    theNewAccount = new Account( {
+                    theNewAccount = new Account();
+
+                    theNewAccount.create( {
                         name:            'wailormanLogout',
                         password:        '123',
                         group:           theNewAccountGroup,
@@ -1770,9 +1782,7 @@ describe( 'Account module testing', function () {
                                 create: true
                             }
                         }
-                    } );
-
-                    theNewAccount.create( function ( err, createdAccount ) {
+                    }, function ( err, createdAccount ) {
                         should.not.exist( err );
 
                         theNewAccount = createdAccount;

@@ -43,7 +43,7 @@ var Account = function ( data ) {
      */
     this.create = function ( data, next ) {
 
-        // 0. Move data from constructor
+        /*// 0. Move data from constructor
         if ( self.constructorData ) {
             self.name = self.constructorData.name;
             self.password = self.constructorData.password;
@@ -60,27 +60,27 @@ var Account = function ( data ) {
             } else {
                 self.individualPerms = null;
             }
-        }
+        }*/
 
 
         // 1. Check variables types
 
-        if ( !self.name )
+        if ( !data.name )
             return next( new restify.InvalidArgumentError( 'name|null' ) );
 
-        if ( !self.password )
+        if ( !data.password )
             return next( new restify.InvalidArgumentError( 'password|null' ) );
 
-        if ( typeof self.name != 'string' )
+        if ( typeof data.name != 'string' )
             return next( new restify.InvalidArgumentError( 'name|not string' ) );
 
-        if ( typeof self.password != 'string' )
+        if ( typeof data.password != 'string' )
             return next( new restify.InvalidArgumentError( 'password|not string' ) );
 
-        if ( self.group && !(self.group instanceof AccountGroup) )
+        if ( data.group && !(data.group instanceof AccountGroup) )
             return next( new restify.InvalidArgumentError( 'group|not AccountGroup' ) );
 
-        if ( self.individualPerms && !mf.validatePerms( self.individualPerms ) )
+        if ( data.individualPerms && !mf.validatePerms( data.individualPerms ) )
             return next( new restify.InvalidArgumentError( 'individualPerms|invalid' ) );
 
 
@@ -89,7 +89,7 @@ var Account = function ( data ) {
                 // 2. Check name engaged
                 function ( wcb ) {
                     AccountModel.findOne(
-                        { name: self.name, deleted: false },
+                        { name: data.name, deleted: false },
                         function ( err, accountDocument ) {
                             if ( err ) return wcb( err );
 
@@ -104,12 +104,12 @@ var Account = function ( data ) {
 
                 // 3. Check group existent
                 function ( wcb ) {
-                    if ( self.group ) {
+                    if ( data.group ) {
 
                         var accountGroupToFind = new AccountGroup();
 
                         accountGroupToFind.getById(
-                            self.group.id,
+                            data.group.id,
                             function ( err ) {
                                 if ( err ) return wcb( err );
 
@@ -126,13 +126,13 @@ var Account = function ( data ) {
                 function ( wcb ) {
                     var dataToWriteToDb = {};
 
-                    dataToWriteToDb.name = self.name;
-                    dataToWriteToDb.password = passwordHash.isHashed( self.password ) ?
-                        self.password :
-                        passwordHash.generate( self.password );
+                    dataToWriteToDb.name = data.name;
+                    dataToWriteToDb.password = passwordHash.isHashed( data.password ) ?
+                        data.password :
+                        passwordHash.generate( data.password );
 
-                    dataToWriteToDb.group = self.group ? self.group.id : null;
-                    dataToWriteToDb.individualPerms = self.individualPerms;
+                    dataToWriteToDb.group = data.group ? data.group.id : null;
+                    dataToWriteToDb.individualPerms = data.individualPerms;
                     dataToWriteToDb.deleted = false;
 
                     AccountModel.create( dataToWriteToDb, function ( err, accountDocument ) {
@@ -155,7 +155,8 @@ var Account = function ( data ) {
                                         scb();
                                     } );
                                 } else {
-                                    self.group = null;
+                                    //self.group = null;
+                                    delete self.group;
                                     scb();
                                 }
 
@@ -171,6 +172,8 @@ var Account = function ( data ) {
                                 self.perms = self.group ?
                                     mf.mergePerms( self.group.perms, self.individualPerms ) :
                                     self.individualPerms;
+
+
 
                                 scb();
                             }
