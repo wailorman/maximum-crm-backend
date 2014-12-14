@@ -4,7 +4,7 @@ var is = require('../../libs/mini-funcs.js').is;
 var restify = require('restify');
 var AccountGroupModel = require('./account-group-model.js').AccountGroupModel;
 var async = require('async');
-var mf = require('maxcrm-libs');
+var mf = require( '../../libs/mini-funcs.js' );
 
 
 /**
@@ -50,7 +50,7 @@ var AccountGroup = function (data) {
 
 
 
-        if ( !next && typeof data == 'function' ){
+        /*if ( !next && typeof data == 'function' ){
 
             if (self.constructorData) {
                 self.name = self.constructorData.name;
@@ -68,7 +68,7 @@ var AccountGroup = function (data) {
 
             data.name = self.name ? self.name : null;
             data.perms = self.perms ? self.perms : null;
-        }
+        }*/
 
 
         if ( typeof data != 'object' || !data)
@@ -237,8 +237,8 @@ var AccountGroup = function (data) {
                     AccountGroupModel.findOne(
                         {_id: self.id, deleted: false},
                         function (err, doc) {
-                            if (err) return mainScb(err);
-                            if (!doc) return mainScb(new restify.InvalidArgumentError('id|404'));
+                            if (err) return next(err);
+                            if (!doc) return next(new restify.InvalidArgumentError('id|404'));
                             accountGroupDocument = doc;
                             mainScb();
                         });
@@ -258,10 +258,10 @@ var AccountGroup = function (data) {
 
                                     // Check type
                                     if (!self.name)
-                                        return scb(new restify.InvalidArgumentError('name|null'));
+                                        return next(new restify.InvalidArgumentError('name|null'));
 
                                     if (typeof self.name != 'string') // if name empty or not string
-                                        return scb(new restify.InvalidArgumentError('name|not string'));
+                                        return next(new restify.InvalidArgumentError('name|not string'));
 
                                     //dataForWrite.name = self.name;
 
@@ -269,16 +269,16 @@ var AccountGroup = function (data) {
                                     AccountGroupModel.findOne(
                                         {name: self.name, deleted: false},
                                         function (err, isNameEngagedAccountGroupDocument) {
-                                            if (err) return mainScb(err);
+                                            if (err) return next(err);
 
 
                                             // Is name for update is already engaged
 
-                                            if (isNameEngagedAccountGroupDocument == false) {
+                                            if ( isNameEngagedAccountGroupDocument ) {
+                                                return next( new restify.InvalidArgumentError( 'name|engaged' ) );
+                                            } else {
                                                 accountGroupDocument.name = self.name;
                                                 scb();
-                                            } else {
-                                                return scb(new restify.InvalidArgumentError('name|engaged'));
                                             }
 
                                         }
@@ -303,7 +303,7 @@ var AccountGroup = function (data) {
 
                                             // And if they are validated with errors, we can't use this perms
                                             // to write to DB
-                                            return scb(new restify.InvalidArgumentError('perms|invalid'));
+                                            return next(new restify.InvalidArgumentError('perms|invalid'));
                                         }
 
                                     } else {
@@ -329,7 +329,7 @@ var AccountGroup = function (data) {
 
                         // Main callback
                         function (err) {
-                            if (err) return mainScb(err);
+                            if (err) return next(err);
                             mainScb();
                         }
                     );
@@ -341,7 +341,7 @@ var AccountGroup = function (data) {
 
 
                     accountGroupDocument.save(function (err, updatedAccountGroupDocument) {
-                        if (err) return mainScb(err);
+                        if (err) return next(err);
 
 
                         // Just in case update already updated AccountGroup object data
