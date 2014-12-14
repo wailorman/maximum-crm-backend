@@ -16,6 +16,10 @@ Array.prototype.Account = {};
 Array.prototype.Account.find = function () {
 };
 
+Array.prototype.Account.findShort = function () {
+};
+
+
 /**
  * Account class
  *
@@ -44,23 +48,23 @@ var Account = function ( data ) {
     this.create = function ( data, next ) {
 
         /*// 0. Move data from constructor
-        if ( self.constructorData ) {
-            self.name = self.constructorData.name;
-            self.password = self.constructorData.password;
+         if ( self.constructorData ) {
+         self.name = self.constructorData.name;
+         self.password = self.constructorData.password;
 
-            if ( self.constructorData.group ) {
-                self.group = self.constructorData.group;
-            } else {
-                self.group = null;
-            }
+         if ( self.constructorData.group ) {
+         self.group = self.constructorData.group;
+         } else {
+         self.group = null;
+         }
 
 
-            if ( self.constructorData.individualPerms ) {
-                self.individualPerms = self.constructorData.individualPerms;
-            } else {
-                self.individualPerms = null;
-            }
-        }*/
+         if ( self.constructorData.individualPerms ) {
+         self.individualPerms = self.constructorData.individualPerms;
+         } else {
+         self.individualPerms = null;
+         }
+         }*/
 
 
         // 1. Check variables types
@@ -172,7 +176,6 @@ var Account = function ( data ) {
                                 self.perms = self.group ?
                                     mf.mergePerms( self.group.perms, self.individualPerms ) :
                                     self.individualPerms;
-
 
 
                                 scb();
@@ -649,6 +652,45 @@ var Account = function ( data ) {
                 next( null, self );
             }
         );
+
+    };
+
+
+    this.isShort = function () {
+
+        var allowedProperties = [ 'id', 'name', 'group' ];
+
+        for ( var propertyName in self ) {
+
+            if ( self.hasOwnProperty( propertyName ) && typeof self[ propertyName ] !== 'function' ) {
+
+
+                // If propertyName is not in allowedProperties
+
+                if ( ! mf.isInArray( propertyName, allowedProperties ) ) {
+
+                    return false;
+
+                }
+
+            }
+
+
+        }
+
+        return true;
+
+    };
+
+    this.isFull = function () {
+
+        // Minimum requirements to bee a full object
+
+        return self.hasOwnProperty( 'id' ) &&
+               self.hasOwnProperty( 'name' ) &&
+               self.hasOwnProperty( 'group' ) &&
+               self.hasOwnProperty( 'perms' ) &&
+               self.hasOwnProperty( 'individualPerms' );
 
     };
 
