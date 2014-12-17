@@ -196,7 +196,7 @@ var testTemplates = {
 
                         for ( var i in theNewAccounts ) {
 
-                            if ( !theNewAccounts.hasOwnProperty( i ) )
+                            if ( ! theNewAccounts.hasOwnProperty( i ) )
                                 continue;
 
                             if ( shortMode ) {
@@ -344,7 +344,11 @@ var reCreate = {
 
         async.series(
             [
-                cleanUp.Accounts,
+                function ( scb ) {
+
+                    cleanUp.Accounts( scb );
+
+                },
                 function () {
 
                     theNewAccount = new Account();
@@ -381,12 +385,16 @@ var reCreate = {
 
         async.series(
             [
-                cleanUp.AccountGroups,
+                function ( scb ) {
+
+                    cleanUp.AccountGroups( scb );
+
+                },
                 function () {
 
-                    theNewAccount = new Account();
+                    theNewAccountGroup = new AccountGroup();
 
-                    theNewAccount.create(
+                    theNewAccountGroup.create(
                         {
                             name:     'theNewAccountGroup',
                             password: '1234'
@@ -484,7 +492,7 @@ describe( 'Account module testing', function () {
     } );
 
 
-    describe( 'objectSize', function () {
+    xdescribe( 'objectSize', function () {
 
         describe( '.isShort', function () {
 
@@ -545,7 +553,7 @@ describe( 'Account module testing', function () {
 
             } );
 
-            it( 'should detect short object without group as short object', function (done) {
+            it( 'should detect short object without group as short object', function ( done ) {
 
                 theNewAccount = new Account();
 
@@ -641,7 +649,7 @@ describe( 'Account module testing', function () {
 
             } );
 
-            it( 'Account object with id and name only is not full', function (done) {
+            it( 'Account object with id and name only is not full', function ( done ) {
 
                 theNewAccount = new Account();
 
@@ -659,7 +667,290 @@ describe( 'Account module testing', function () {
     } );
 
 
-    describe( '.create', function () {
+    describe( 'filter validating', function () {
+
+        before( function ( done ) {
+
+            reCreate.full( function ( err ) {
+                should.not.exist( err );
+                done();
+            } );
+
+        } );
+
+        describe( 'validators', function () {
+
+            describe( 'id', function () {
+
+                it( 'should validate', function ( done ) {
+
+                    theNewAccount.validators.id( '548dfad210b13dc0226ef8c1', function ( err ) {
+                        should.not.exist( err );
+                        done();
+                    } );
+
+                } );
+
+                it( 'should not validate', function ( done ) {
+
+                    async.each(
+                        [
+                            '0',
+                            null,
+                            true,
+                            {},
+                            ''
+                        ],
+                        theNewAccount.validators.id,
+                        function ( err ) {
+                            should.exist( err );
+                            done();
+                        }
+                    );
+
+                } );
+
+            } );
+
+            describe( 'name', function () {
+
+                it( 'should validate', function ( done ) {
+
+                    async.each(
+                        [
+                            'wailorman',
+                            'snoberik',
+                            'iTs Some STRanGe StRiNg'
+                        ],
+                        theNewAccount.validators.name,
+                        function ( err ) {
+                            should.not.exist( err );
+                            done();
+                        }
+                    );
+
+                } );
+
+                it( 'should not validate', function ( done ) {
+
+                    async.each(
+                        [
+                            '',
+                            false,
+                            true,
+                            {},
+                            null
+                        ],
+                        theNewAccount.validators.name,
+                        function ( err ) {
+                            should.exist( err );
+                            done();
+                        }
+                    );
+
+                } );
+
+            } );
+
+            describe( 'token', function () {
+
+                it( 'should validate', function ( done ) {
+
+                    async.each(
+                        [
+                            'awDdqOeBF9DmEbRNi4EcNofL',
+                            '548dfad210b13dc0226ef8c1'
+                        ],
+                        theNewAccount.validators.token,
+                        function ( err ) {
+                            should.not.exist( err );
+                            done();
+                        }
+                    );
+
+                } );
+
+                it( 'should not validate', function ( done ) {
+
+                    async.each(
+                        [
+                            'a',
+                            null,
+                            true,
+                            false,
+                            {},
+                            []
+                        ],
+                        theNewAccount.validators.token,
+                        function ( err ) {
+                            should.exist( err );
+                            done();
+                        }
+                    );
+
+                } );
+
+            } );
+
+            describe( 'group', function () {
+
+                it( 'should validate', function ( done ) {
+
+                    async.each(
+                        [
+                            theNewAccountGroup
+                        ],
+                        theNewAccount.validators.group,
+                        function ( err ) {
+                            should.not.exist( err );
+                            done();
+                        }
+                    );
+
+                } );
+
+                it( 'should not validate', function ( done ) {
+
+                    async.series(
+                        [
+                            function ( scb ) {
+
+                                theNewAccountGroup.remove( function ( err ) {
+
+                                    should.not.exist( err );
+                                    scb();
+
+                                } );
+
+                            },
+                            function ( scb ) {
+
+                                async.each(
+                                    [
+                                        theNewAccountGroup
+                                    ],
+                                    theNewAccount.validators.group,
+                                    function ( err ) {
+                                        should.exist( err );
+                                        scb();
+                                    }
+                                );
+
+                            },
+                            function () {
+
+                                reCreate.full( function () {
+                                    done();
+                                } );
+
+                            }
+                        ]
+                    );
+
+                } );
+
+            } );
+
+        } );
+
+        describe( '.validateParameters()', function () {
+
+            it( 'should validate successfully', function ( done ) {
+
+                async.each(
+                    [
+                        { id: '548dfad210b13dc0226ef8c1' },
+                        { name: 'wailorman' },
+                        { token: 'awDdqOeBF9DmEbRNi4EcNofL' },
+                        { group: theNewAccountGroup }
+                    ],
+                    theNewAccount.validateParameters,
+                    function ( err ) {
+                        should.not.exist( err );
+                        done();
+                    }
+                );
+
+            } );
+
+            it( 'should not validate', function ( done ) {
+
+                async.series(
+                    [
+                        // Remove AccountGroup
+                        function ( scb ) {
+
+                            theNewAccountGroup.remove( function ( err ) {
+
+                                should.not.exist( err );
+                                scb();
+
+                            } );
+
+                        },
+
+                        // Try to validate
+                        function ( scb ) {
+
+                            async.eachSeries(
+                                [
+                                    { id: '0' },
+                                    { id: null },
+                                    { id: true },
+                                    { id: true },
+                                    { id: {} },
+                                    { id: '' },
+
+
+                                    { name: '' },
+                                    { name: false },
+                                    { name: true },
+                                    { name: {} },
+                                    { name: null },
+
+
+                                    { token: '' },
+                                    { token: 'a' },
+                                    { token: null },
+                                    { token: true },
+                                    { token: false },
+                                    { token: {} },
+                                    { token: [] },
+
+
+                                    { group: theNewAccountGroup }
+                                ],
+                                theNewAccount.validateParameters,
+                                function ( err ) {
+                                    should.exist( err );
+                                    scb();
+                                }
+                            );
+
+                        },
+
+                        // ReCreate AccountGroup
+                        function () {
+
+                            reCreate.full( function () {
+
+                                done();
+
+                            } );
+
+                        }
+                    ]
+                );
+
+
+            } );
+
+        } );
+
+    } );
+
+
+    xdescribe( '.create', function () {
 
         // Recreate Accounts and AccountGroups
         beforeEach( function ( done ) {
@@ -1117,7 +1408,7 @@ describe( 'Account module testing', function () {
     } );
 
 
-    describe( '.findOneShort', function () {
+    xdescribe( '.findOneShort', function () {
 
         // reCreate
         beforeEach( function ( done ) {
@@ -1180,7 +1471,7 @@ describe( 'Account module testing', function () {
 
     } );
 
-    describe( '.findOne', function () {
+    xdescribe( '.findOne', function () {
 
         // reCreate
         beforeEach( function ( done ) {
@@ -1191,7 +1482,7 @@ describe( 'Account module testing', function () {
 
         } );
 
-        it( 'should find full by id, name, group', function ( done ) {
+        xit( 'should find full by id, name, group', function ( done ) {
 
             testTemplates.findOne.shouldFind( 'findOne', [
                 { id: theNewAccount.id },
@@ -1201,7 +1492,10 @@ describe( 'Account module testing', function () {
 
         } );
 
-        it( 'should not find with invalid types', function ( done ) {
+        // TODO
+        xit( 'it should find by multiplie params' );
+
+        xit( 'should not find with invalid types', function ( done ) {
 
             testTemplates.findOne.shouldCallErr( 'findOne', [
                 {},
@@ -1221,15 +1515,44 @@ describe( 'Account module testing', function () {
 
         } );
 
-        it( 'should find short by token' );
+        xit( 'should find full by token' );
 
-        it( 'should not find nonexistent', function ( done ) {
+        // TODO
+        xit( 'should not find by nonexistent AccountGroup', function ( done ) {
+
+            async.series(
+                [
+                    function ( scb ) {
+
+                        theNewAccountGroup.remove( function ( err ) {
+
+                            should.not.exist( err );
+
+                            scb();
+
+                        } );
+
+                    },
+
+                    function () {
+
+                        testTemplates.findOne.shouldReturn404( 'findOne', [
+                            { group: theNewAccount.group }
+                        ], done );
+
+                    }
+                ]
+            );
+
+        } );
+
+        xit( 'should not find nonexistent', function ( done ) {
 
             testTemplates.findOne.shouldReturn404( 'findOne', [ { id: '000000000000000000000000' } ], done );
 
         } );
 
-        it( 'should return 404 when find by correctly password or individualPerms', function ( done ) {
+        xit( 'should return 404 when find by correctly password or individualPerms', function ( done ) {
 
             testTemplates.findOne.shouldReturn404( 'findOne',
                 [
@@ -1242,7 +1565,7 @@ describe( 'Account module testing', function () {
 
     } );
 
-    describe( '.find', function () {
+    xdescribe( '.find', function () {
 
         // reCreate
         beforeEach( function ( done ) {
@@ -1376,7 +1699,7 @@ describe( 'Account module testing', function () {
 
     } );
 
-    describe( '.findShort', function () {
+    xdescribe( '.findShort', function () {
 
         // reCreate
         beforeEach( function ( done ) {
@@ -1511,7 +1834,7 @@ describe( 'Account module testing', function () {
     } );
 
 
-    describe( '.update', function () {
+    xdescribe( '.update', function () {
 
         // Recreate Accounts and AccountGroups
         beforeEach( function ( done ) {
