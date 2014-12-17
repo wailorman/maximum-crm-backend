@@ -1,9 +1,9 @@
 // AccountGroup
 
-var is = require('../../libs/mini-funcs.js').is;
-var restify = require('restify');
-var AccountGroupModel = require('./account-group-model.js').AccountGroupModel;
-var async = require('async');
+var is = require( '../../libs/mini-funcs.js' ).is;
+var restify = require( 'restify' );
+var AccountGroupModel = require( './account-group-model.js' ).AccountGroupModel;
+var async = require( 'async' );
 var mf = require( '../../libs/mini-funcs.js' );
 
 
@@ -16,11 +16,11 @@ var mf = require( '../../libs/mini-funcs.js' );
  *
  * @constructor
  */
-var AccountGroup = function (data) {
+var AccountGroup = function ( data ) {
 
     var self = this;
 
-    if (data) {
+    if ( data ) {
         this.constructorData = data;
     }
 
@@ -44,7 +44,7 @@ var AccountGroup = function (data) {
      *
      * @param {function}            next        callback(err, doc)
      */
-    this.create = function (data, next) {
+    this.create = function ( data, next ) {
 
 
 
@@ -52,37 +52,37 @@ var AccountGroup = function (data) {
 
         /*if ( !next && typeof data == 'function' ){
 
-            if (self.constructorData) {
-                self.name = self.constructorData.name;
+         if (self.constructorData) {
+         self.name = self.constructorData.name;
 
-                if (self.constructorData.perms) {
-                    self.perms = self.constructorData.perms;
-                }else{
-                    self.perms = {};
-                }
-            }
+         if (self.constructorData.perms) {
+         self.perms = self.constructorData.perms;
+         }else{
+         self.perms = {};
+         }
+         }
 
-            next = data;
+         next = data;
 
-            data = {};
+         data = {};
 
-            data.name = self.name ? self.name : null;
-            data.perms = self.perms ? self.perms : null;
-        }*/
+         data.name = self.name ? self.name : null;
+         data.perms = self.perms ? self.perms : null;
+         }*/
 
 
-        if ( typeof data != 'object' || !data)
-            return next(new restify.InvalidArgumentError('data|not object'));
+        if ( typeof data != 'object' || !data )
+            return next( new restify.InvalidArgumentError( 'data|not object' ) );
 
-        if ( typeof data.name != 'string' || !data.name)
-            return next(new restify.InvalidArgumentError('name|not string or empty'));
+        if ( typeof data.name != 'string' || !data.name )
+            return next( new restify.InvalidArgumentError( 'name|not string or empty' ) );
 
-        if (data.perms) {
+        if ( data.perms ) {
 
             // We can don't pass perms. It will be AccountGroup without any perms
 
-            if (is(data.perms).not.object)
-                return next(new restify.InvalidArgumentError('data.perms is not object'));
+            if ( is( data.perms ).not.object )
+                return next( new restify.InvalidArgumentError( 'data.perms is not object' ) );
 
         } else {
 
@@ -92,23 +92,23 @@ var AccountGroup = function (data) {
         }
 
         AccountGroupModel.findOne(
-            {name: data.name, deleted: false},
-            function (err, doc) {
-                if (err) return next(err);
+            { name: data.name, deleted: false },
+            function ( err, doc ) {
+                if ( err ) return next( err );
 
                 // If we didn't find any AccountGroups with the same name
-                if (!doc) {
+                if ( !doc ) {
 
                     // Now, let's create a new AccountGroup
                     AccountGroupModel.create(
                         {
                             // Generate data object again to avoid injections
-                            name: data.name,
-                            perms: data.perms,
+                            name:    data.name,
+                            perms:   data.perms,
                             deleted: false
                         },
-                        function (err, doc) {
-                            if (err) return next(err);
+                        function ( err, doc ) {
+                            if ( err ) return next( err );
 
 
                             //var theNewAccountGroup = new AccountGroup();
@@ -118,7 +118,7 @@ var AccountGroup = function (data) {
 
                             if ( doc.perms ) {
                                 self.perms = doc.perms;
-                            }else{
+                            } else {
                                 self.perms = {};
                             }
 
@@ -126,13 +126,13 @@ var AccountGroup = function (data) {
 
                             delete self.constructorData;
 
-                            next(null, self);
+                            next( null, self );
                         }
                     );
 
 
                 } else {
-                    return next(new restify.InvalidArgumentError('name|engaged'));
+                    return next( new restify.InvalidArgumentError( 'name|engaged' ) );
                 }
             }
         )
@@ -147,15 +147,15 @@ var AccountGroup = function (data) {
      * @param {function}            next    callback(err, doc)
      * @returns {*}
      */
-    this.getById = function (id, next) {
-        if (!mf.isObjectId(id))
-            return next(new restify.InvalidArgumentError('id|not stringObjectId'));
+    this.getById = function ( id, next ) {
+        if ( !mf.isObjectId( id ) )
+            return next( new restify.InvalidArgumentError( 'id|not ObjectId' ) );
 
         AccountGroupModel.findOne(
-            {_id: id, deleted: false},
-            function (err, doc) {
-                if (err) return next(err);
-                if (!doc) return next(new restify.ResourceNotFoundError('404'));
+            { _id: id, deleted: false },
+            function ( err, doc ) {
+                if ( err ) return next( err );
+                if ( !doc ) return next( new restify.ResourceNotFoundError( '404' ) );
 
                 //var newAccountGroup = new AccountGroup();
 
@@ -164,13 +164,13 @@ var AccountGroup = function (data) {
 
                 if ( doc.perms ) {
                     self.perms = doc.perms;
-                }else{
+                } else {
                     self.perms = {};
                 }
 
                 self.deleted = doc.deleted;
 
-                next(null, self);
+                next( null, self );
             }
         );
     };
@@ -182,27 +182,27 @@ var AccountGroup = function (data) {
      *
      * @param {function}    next    callback(err)
      */
-    this.remove = function (next) {
+    this.remove = function ( next ) {
 
         AccountGroupModel.findOne(
-            {_id: self.id, deleted: false},
-            function (err, doc) {
-                if (err) {
-                    return next(err);
+            { _id: self.id, deleted: false },
+            function ( err, doc ) {
+                if ( err ) {
+                    return next( err );
                 }
-                if (!doc) {
-                    return next(new restify.InvalidContentError('cant find AccountGroup ' + self.id));
+                if ( !doc ) {
+                    return next( new restify.InvalidContentError( 'cant find AccountGroup ' + self.id ) );
                 }
 
                 doc.deleted = true;
 
-                doc.save(function (err) {
-                    if (err) return next(err);
+                doc.save( function ( err ) {
+                    if ( err ) return next( err );
 
                     self.deleted = true;
 
-                    next(null);
-                });
+                    next( null );
+                } );
             }
         );
 
@@ -215,14 +215,13 @@ var AccountGroup = function (data) {
      * @param {function}    next    callback(err, doc)
      * @returns {*}
      */
-    this.update = function (next) {
+    this.update = function ( next ) {
 
         if ( !self.id )
-            return next(new restify.InvalidArgumentError('id|null'));
+            return next( new restify.InvalidArgumentError( 'id|null' ) );
 
-        if ( !mf.isObjectId(self.id) )
-            return next(new restify.InvalidArgumentError('id|not ObjectId'));
-
+        if ( !mf.isObjectId( self.id ) )
+            return next( new restify.InvalidArgumentError( 'id|not ObjectId' ) );
 
 
         //var dataForWrite;
@@ -232,44 +231,44 @@ var AccountGroup = function (data) {
             [
 
                 // 1. Get AccountGroup document to update
-                function (mainScb) {
+                function ( mainScb ) {
 
                     AccountGroupModel.findOne(
-                        {_id: self.id, deleted: false},
-                        function (err, doc) {
-                            if (err) return next(err);
-                            if (!doc) return next(new restify.InvalidArgumentError('id|404'));
+                        { _id: self.id, deleted: false },
+                        function ( err, doc ) {
+                            if ( err ) return next( err );
+                            if ( !doc ) return next( new restify.InvalidArgumentError( 'id|404' ) );
                             accountGroupDocument = doc;
                             mainScb();
-                        });
+                        } );
 
                 },
 
                 // 2. What parameters was modified & update Object
-                function (mainScb) {
+                function ( mainScb ) {
 
 
                     async.series(
                         [
                             // 2.1  if name modified
-                            function (scb) {
+                            function ( scb ) {
 
-                                if (accountGroupDocument.name != self.name) {
+                                if ( accountGroupDocument.name != self.name ) {
 
                                     // Check type
-                                    if (!self.name)
-                                        return next(new restify.InvalidArgumentError('name|null'));
+                                    if ( !self.name )
+                                        return next( new restify.InvalidArgumentError( 'name|null' ) );
 
-                                    if (typeof self.name != 'string') // if name empty or not string
-                                        return next(new restify.InvalidArgumentError('name|not string'));
+                                    if ( typeof self.name != 'string' ) // if name empty or not string
+                                        return next( new restify.InvalidArgumentError( 'name|not string' ) );
 
                                     //dataForWrite.name = self.name;
 
                                     // Check for name existing
                                     AccountGroupModel.findOne(
-                                        {name: self.name, deleted: false},
-                                        function (err, isNameEngagedAccountGroupDocument) {
-                                            if (err) return next(err);
+                                        { name: self.name, deleted: false },
+                                        function ( err, isNameEngagedAccountGroupDocument ) {
+                                            if ( err ) return next( err );
 
 
                                             // Is name for update is already engaged
@@ -284,26 +283,26 @@ var AccountGroup = function (data) {
                                         }
                                     );
 
-                                }else{
+                                } else {
                                     scb();
                                 }
                             },
 
                             // 2.2  if perms modified
-                            function (scb) {
+                            function ( scb ) {
 
                                 // If perms was modify
-                                if (accountGroupDocument.perms != self.perms) {
-                                    if (self.perms) {
+                                if ( accountGroupDocument.perms != self.perms ) {
+                                    if ( self.perms ) {
 
 
                                         // But if perms is not null, we should validate them
-                                        if (!mf.validatePerms(self.perms)) {
+                                        if ( !mf.validatePerms( self.perms ) ) {
 
 
                                             // And if they are validated with errors, we can't use this perms
                                             // to write to DB
-                                            return next(new restify.InvalidArgumentError('perms|invalid'));
+                                            return next( new restify.InvalidArgumentError( 'perms|invalid' ) );
                                         }
 
                                     } else {
@@ -320,7 +319,7 @@ var AccountGroup = function (data) {
                                     accountGroupDocument.perms = self.perms;
 
                                     scb();
-                                }else{
+                                } else {
                                     scb();
                                 }
 
@@ -328,8 +327,8 @@ var AccountGroup = function (data) {
                         ],
 
                         // Main callback
-                        function (err) {
-                            if (err) return next(err);
+                        function ( err ) {
+                            if ( err ) return next( err );
                             mainScb();
                         }
                     );
@@ -337,11 +336,11 @@ var AccountGroup = function (data) {
                 },
 
                 // 3. Update AccountGroup
-                function (mainScb) {
+                function ( mainScb ) {
 
 
-                    accountGroupDocument.save(function (err, updatedAccountGroupDocument) {
-                        if (err) return next(err);
+                    accountGroupDocument.save( function ( err, updatedAccountGroupDocument ) {
+                        if ( err ) return next( err );
 
 
                         // Just in case update already updated AccountGroup object data
@@ -350,15 +349,15 @@ var AccountGroup = function (data) {
                         self.perms = updatedAccountGroupDocument.perms;
 
                         // Return AccountGroup object
-                        next(null, self);
-                    });
+                        next( null, self );
+                    } );
                 }
 
             ],
-            function (err) {
-                if (err) return next(err);
+            function ( err ) {
+                if ( err ) return next( err );
 
-                next(null, self);
+                next( null, self );
             }
         );
 

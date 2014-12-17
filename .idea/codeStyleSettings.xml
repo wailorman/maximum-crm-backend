@@ -27,6 +27,7 @@
         </codeStyleSettings>
         <codeStyleSettings language="JavaScript">
           <option name="ALIGN_MULTILINE_BINARY_OPERATION" value="true" />
+          <option name="SPACE_AROUND_UNARY_OPERATOR" value="true" />
           <option name="SPACE_WITHIN_METHOD_CALL_PARENTHESES" value="true" />
           <option name="SPACE_WITHIN_METHOD_PARENTHESES" value="true" />
           <option name="SPACE_WITHIN_IF_PARENTHESES" value="true" />
@@ -39,6 +40,5 @@
       </value>
     </option>
     <option name="USE_PER_PROJECT_SETTINGS" value="true" />
-    <option name="PREFERRED_PROJECT_CODE_STYLE" value="maxcrm" />
   </component>
 </project>
