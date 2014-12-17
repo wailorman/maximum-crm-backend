@@ -7,7 +7,7 @@ var randtoken = require('rand-token').suid;
 
 
 
-//var AccountGroupModel = require('./classes/account-group/account-group.js').Model;
+// var AccountGroupModel = require('./classes/account-group/account-group.js').Model;
 
 
 mongoose.connect('mongodb://localhost/test');

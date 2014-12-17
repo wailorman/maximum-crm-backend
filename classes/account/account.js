@@ -1,23 +1,12 @@
 var restify = require( 'restify' );
 var mongoose = require( 'mongoose' );
+var Document = require( '../../node_modules/mongoose/lib/document.js' );
 var passwordHash = require( 'password-hash' );
 var async = require( 'async' );
 
 var mf = require( '../../libs/mini-funcs.js' );
 var AccountModel = require( './account-model.js' ).AccountModel;
 var AccountGroup = require( '../account-group/account-group.js' );
-
-
-var document2Object = function ( document, next ) {
-
-};
-
-Array.prototype.Account = {};
-Array.prototype.Account.find = function () {
-};
-
-Array.prototype.Account.findShort = function () {
-};
 
 
 /**
@@ -37,7 +26,10 @@ var Account = function ( data ) {
         this.constructorData = data;
     }
 
+
     var self = this;
+    Array.prototype.Account = {};
+
 
     /**
      * Create an Account
@@ -69,10 +61,10 @@ var Account = function ( data ) {
 
         // 1. Check variables types
 
-        if ( !data.name )
+        if ( ! data.name )
             return next( new restify.InvalidArgumentError( 'name|null' ) );
 
-        if ( !data.password )
+        if ( ! data.password )
             return next( new restify.InvalidArgumentError( 'password|null' ) );
 
         if ( typeof data.name != 'string' )
@@ -81,10 +73,10 @@ var Account = function ( data ) {
         if ( typeof data.password != 'string' )
             return next( new restify.InvalidArgumentError( 'password|not string' ) );
 
-        if ( data.group && !(data.group instanceof AccountGroup) )
+        if ( data.group && ! (data.group instanceof AccountGroup) )
             return next( new restify.InvalidArgumentError( 'group|not AccountGroup' ) );
 
-        if ( data.individualPerms && !mf.validatePerms( data.individualPerms ) )
+        if ( data.individualPerms && ! mf.validatePerms( data.individualPerms ) )
             return next( new restify.InvalidArgumentError( 'individualPerms|invalid' ) );
 
 
@@ -199,13 +191,395 @@ var Account = function ( data ) {
     };
 
 
+    this.validators = {
+        id: function ( value, next ) {
+
+            if ( ! mf.isObjectId( value ) ) {
+                // incorrect
+                return next( new restify.InvalidArgumentError( 'id|not ObjectId' ) );
+            } else {
+                // correct
+                next( null );
+            }
+        },
+        name: function ( value, next ) {
+
+            if ( typeof value !== 'string' ) {
+                return next( new restify.InvalidArgumentError( 'name|not string' ) );
+            } else {
+                next( null );
+            }
+
+        },
+        token: function ( value, next ) {
+
+            if ( ! mf.isToken( value ) ) {
+                return next( new restify.InvalidArgumentError( 'token|not token' ) );
+            } else {
+                next( null );
+            }
+
+        },
+        group: function ( value, next ) {
+
+            var foundAccountGroup; // redeclare as local to avoid conflicts with current validator
+
+            var groupId;
+
+
+            // Getting groupId for validating
+            if ( value instanceof AccountGroup && value.id ) {
+
+                groupId = value.id;
+
+            } else if ( typeof value === 'string' ) {
+
+                groupId = value;
+
+            } else {
+
+                next( new restify.InvalidArgumentError( 'group|not string or not AccountGroup' ) );
+
+            }
+
+
+            // Validating group for existence
+
+            foundAccountGroup = new AccountGroup();
+
+            foundAccountGroup.getById( groupId, function ( err ) { // need to be short
+
+                if ( err ) {
+
+                    if ( err instanceof restify.ResourceNotFoundError ) {
+
+                        next( new restify.InvalidArgumentError( 'group|404' ) );
+
+                    } else if ( err instanceof restify.InvalidArgumentError ) {
+
+                        next( new restify.InvalidArgumentError( 'group|type error' ) );
+
+                    } else {
+
+                        next( err );
+
+                    }
+
+                } else {
+
+                    next( null );
+
+                }
+
+            } );
+
+        }
+    };
+
+    /**
+     * Validate passed filter
+     *
+     * @example
+     * validateParameters( { name: [ 'wailorman', 'snoberik' ] }, function( err ){ ... } )
+     *
+     * @param {object}      filter
+     * @param {function}    next    ( err, {boolean} isValid )
+     */
+    this.validateParameters = function ( filter, next ) {
+
+        async.parallel(
+            [
+                // 1. id
+                function ( pcb ) {
+
+                    if ( filter.id ){
+
+                        if ( ! ( filter.id instanceof Array ) )
+                            filter.id = [ filter.id ];
+
+                        async.each( filter.id, self.validators.id, pcb );
+
+                    }else
+                        pcb();
+
+                },
+
+                // 2. name
+                function ( pcb ) {
+
+                    if ( filter.name ){
+
+                        if ( ! ( filter.name instanceof Array ) )
+                            filter.name = [ filter.name ];
+
+                        async.each( filter.name, self.validators.name, pcb );
+
+                    }else
+                        pcb();
+
+                },
+
+                // 3. token
+                function ( pcb ) {
+
+                    if ( filter.token ){
+
+                        if ( ! ( filter.token instanceof Array ) )
+                            filter.token = [ filter.token ];
+
+                        async.each( filter.token, self.validators.token, pcb );
+
+                    }else
+                        pcb();
+
+                },
+
+                // 4. group
+                function ( pcb ) {
+
+                    if ( filter.group ){
+
+                        if ( ! ( filter.group instanceof Array ) )
+                            filter.group = [ filter.group ];
+
+                        async.each( filter.group, self.validators.group, pcb );
+
+                    }else
+                        pcb();
+
+                }
+
+            ],
+            function ( err ) {
+
+                if ( err ) next( err );
+
+                next( null );
+
+            }
+        );
+
+    };
+
+
+    /**
+     * Prepare query for mongoDB
+     *
+     * @param {object}      filter
+     * @param {function}    next    ( err, {object} query )
+     */
+    var prepareQuery = function ( filter, next ) {
+
+        /*
+         Allowed filter parameters:
+         - id
+         - name
+         - group
+         - token
+         */
+
+
+        var andStatements, statement, parameterName, parameterVariant, i;
+
+        andStatements = [];
+
+
+        if ( typeof filter !== 'object' )
+            return next( new restify.InvalidArgumentError( 'filter|not object' ) );
+
+        async.parallel(
+            [
+                // 1. id
+                function ( pcb ) {
+
+                    if ( filter.hasOwnProperty( 'id' ) ) {
+
+                        if ( (filter.id instanceof Array) ) {
+
+                            async.each( filter.id, function ( id, ecb ) {
+
+                                if ( typeof id === 'string' ) {
+
+                                    andStatements.push( { _id: id } );
+                                    ecb();
+
+                                } else
+                                    return next( new restify.InvalidArgumentError( 'filter.id(' + id + ')|not string' ) );
+
+
+                                andStatements.push( { _id: id } );
+                                ecb();
+
+
+                            }, pcb );
+
+                        } else
+                            return next( new restify.InvalidArgumentError( 'filter.id|not Array' ) );
+
+
+                    }
+
+                },
+
+                // 2. name
+                function ( pcb ) {
+
+                    if ( filter.hasOwnProperty( 'name' ) ) {
+
+                        if ( filter.name instanceof Array ) {
+
+                            async.each( filter.name, function ( name, ecb ) {
+
+                                if ( typeof name === 'string' ) {
+
+                                    andStatements.push( { name: name } );
+                                    ecb();
+
+                                } else
+                                    return next( new restify.InvalidArgumentError( 'filter.name(' + name + ')|not string' ) );
+
+
+                            }, pcb );
+
+                        } else
+                            return next( new restify.InvalidArgumentError( 'filter.name|not Array' ) );
+
+                    }
+
+                },
+
+                // 3. token
+
+                // 4. group
+                function ( pcb ) {
+
+                    var groupIds = [];
+
+                    if ( filter.hasOwnProperty( 'group' ) ) {
+
+                        if ( filter.group instanceof Array ) {
+
+                            async.each( filter.group, function ( group, ecb ) {
+
+                                if ( group instanceof AccountGroup && group.id ) {
+
+                                    groupIds.push( group.id );
+
+                                } else if ( typeof group === 'string' ) {
+
+                                    groupIds.push( group );
+
+                                } else
+                                    return next( new restify.InternalError( ' Account prepareQuery: filter.group|not AccountGroup & not string' ) );
+
+
+                                ecb();
+
+                            }, function () {
+
+                                andStatements.push( { group: { $in: groupIds } } );
+                                pcb();
+
+                            } );
+
+                        } else
+                            return next( new restify.InternalError( 'Account prepareQuery: group|not Array' ) );
+
+
+                    }
+
+                }
+
+            ],
+            function () {
+
+                next( null, { $and: andStatements } );
+
+            }
+        );
+
+
+    };
+
+
     /**
      * Find one full Account object
      *
      * @param {object}      filter
-     * @param {function}    next
+     *
+     * @param {string=}     filter.id
+     * @param {string=}     filter.name
+     * @param {string=}     filter.group    AccountGroup string id
+     * @param {string=}     filter.token    string token
+     *
+     * @param next
      */
     this.findOne = function ( filter, next ) {
+
+        var query, accountDocument;
+
+        async.series(
+            [
+
+                // 1. Validate filter
+                function ( scb ) {
+
+                    validateFilter( filter, function ( err ) {
+
+                        if ( err ) return next( err );
+
+                        scb();
+
+                    } );
+
+                },
+
+                // 2. Prepare query
+                function ( scb ) {
+
+                    prepareQuery( filter, function ( err, preparedQuery ) {
+
+                        if ( err ) return next( err );
+
+                        query = preparedQuery;
+
+                        scb();
+
+                    } );
+
+                },
+
+                // 3. Find in DB
+                function ( scb ) {
+
+                    AccountModel.findOne( query, function ( err, doc ) {
+
+                        if ( err ) return next( err );
+
+                        accountDocument = doc;
+
+                        scb();
+
+                    } );
+
+                },
+
+                // 4. Convert document
+                function ( scb ) {
+
+                    accountDocument.toFullObject( self, null, function ( err ) {
+
+                        if ( err ) return next( err );
+
+                        scb();
+
+                    } );
+
+                }
+
+            ]
+        );
+
     };
 
 
@@ -213,31 +587,215 @@ var Account = function ( data ) {
      * Find one short Account object
      *
      * @param {object}      filter
-     * @param {function}    next
+     *
+     * @param {string=}     filter.id
+     * @param {string=}     filter.name
+     * @param {string=}     filter.group    AccountGroup string id
+     * @param {string=}     filter.token    string token
+     *
+     * @param next
      */
     this.findOneShort = function ( filter, next ) {
     };
 
-
     /**
-     * Find many Account objects
+     * Find several full Accounts objects by filter
      *
      * @param {object}      filter
-     * @param {function}    next
+     *
+     * @param {string=}     filter.id
+     * @param {string=}     filter.name
+     * @param {string=}     filter.group    AccountGroup string id
+     * @param {string=}     filter.token    string token
+     *
+     * @param next
      */
-    this.find = function ( filter, next ) {
+    Array.prototype.Account.find = function ( filter, next ) {
+    };
+
+    /**
+     * Find several short Accounts objects by filter
+     *
+     * @param {object}      filter
+     *
+     * @param {string=}     filter.id
+     * @param {string=}     filter.name
+     * @param {string=}     filter.group    AccountGroup string id
+     * @param {string=}     filter.token    string token
+     *
+     * @param next
+     */
+    Array.prototype.Account.findShort = function ( filter, next ) {
     };
 
 
-    /**
-     * Find many short Account objects
-     *
-     * @param {object}      filter
-     * @param {function}    next
-     */
-    this.findShort = function ( filter, next ) {
-    };
+    Document.prototype.Account = {
 
+        toFullObject: function ( object, propertiesToAdd, next ) {
+
+            /*
+
+             Requires properties for full Account object:
+             - id
+             - name
+             - group
+             - perms
+             - individualPerms
+
+             Allowed properties for full Account object:
+             - token
+             - password (hashed)
+
+             */
+
+            var document = this;
+
+            //var allowedPropertiesToAdd = [ 'password', 'token' ];
+
+
+            // Some of required properties for full Account object
+            var documentFieldsConvertRules = [
+
+                /* [ fieldInDocument, propertyInObject ] */
+
+                [ '_id', 'id' ],
+                [ 'name', 'name' ],
+                [ 'password', 'password' ],
+                [ 'individualPerms', 'individualPerms' ]
+                // + group (because we can get it only in async mode)
+            ];
+
+            var i, curDocumentFiled, curObjectProperty;
+
+
+            async.series(
+                [
+
+                    // 1. Add basic req. properties
+                    function ( scb ) {
+
+                        for ( i in documentFieldsConvertRules ) {
+
+                            // for^ check statement
+                            if ( documentFieldsConvertRules.hasOwnProperty( i ) ) {
+
+                                // Does document has filed we find
+                                if ( document.hasOwnProperty( documentFieldsConvertRules[ i ][ 0 ] ) ) {
+
+                                    curDocumentFiled = documentFieldsConvertRules[ i ][ 0 ];
+                                    curObjectProperty = documentFieldsConvertRules[ i ][ 1 ];
+
+                                    object[ curObjectProperty ] = document[ curDocumentFiled ];
+
+                                    scb();
+
+                                }
+
+                            }
+
+                        }
+
+                    },
+
+                    // 2. Add group req. property
+                    function ( scb ) {
+
+                        if ( document.hasOwnProperty( 'group' ) ) {
+
+                            object.group = new AccountGroup();
+                            object.group.getById( document.group.toString(), function ( err ) {
+
+                                if ( err ) return next( err );
+                                scb();
+
+                            } );
+
+                        } else {
+                            scb();
+                        }
+
+                    },
+
+
+                    // 3. Add not req. properties
+                    function ( scb ) {
+
+                        // password
+                        if ( mf.isInArray( 'password', propertiesToAdd ) )
+                            object.password = document.password;
+
+                        // token
+                        // TODO token
+
+                        scb();
+
+                    }
+
+                ],
+                function () {
+
+                    next( null, object );
+
+                }
+            );
+
+
+        },
+
+        toShortObject: function ( object, next ) {
+
+            /*
+
+             Fields in short Account object
+             - id
+             - name
+             - group (if exists)
+
+             */
+
+            var document = this;
+
+            async.series(
+                [
+                    // 1. Add static (synchronously get) properties from document
+                    function ( scb ) {
+
+                        object.id = document._id.toString();
+                        object.name = document.name;
+
+                        scb();
+
+                    },
+
+                    // 2. Asynchronously adding group
+                    function ( scb ) {
+
+                        if ( document.group ) {
+
+                            object.group = new AccountGroup();
+                            object.group.getById( document.group.toString(), function ( err ) {
+
+                                if ( err ) return next( err );
+
+                                scb();
+
+                            } );
+
+                        } else {
+                            scb();
+                        }
+
+                    }
+                ],
+                function () {
+                    next( null, object );
+                }
+            );
+
+
+        }
+
+    };
 
     /**
      * Get Account by id
@@ -247,10 +805,10 @@ var Account = function ( data ) {
      */
     this.getById = function ( id, next ) {
 
-        if ( !id )
+        if ( ! id )
             return next( new restify.InvalidArgumentError( 'id|null' ) );
 
-        if ( !mf.isObjectId( id ) )
+        if ( ! mf.isObjectId( id ) )
             return next( new restify.InvalidArgumentError( 'id|not ObjectId' ) );
 
 
@@ -258,9 +816,10 @@ var Account = function ( data ) {
             { _id: id, deleted: false },
             function ( err, accountDocument ) {
                 if ( err ) return next( err );
-                if ( !accountDocument ) return next( new restify.ResourceNotFoundError( '404' ) );
+                if ( ! accountDocument ) return next( new restify.ResourceNotFoundError( '404' ) );
 
                 var theAccountGroup = new AccountGroup();
+
 
                 async.series(
                     [
@@ -324,7 +883,7 @@ var Account = function ( data ) {
      */
     this.getByName = function ( name, next ) {
 
-        if ( !name )
+        if ( ! name )
             return next( new restify.InvalidArgumentError( 'id|null' ) );
 
         if ( typeof name != 'string' )
@@ -335,7 +894,7 @@ var Account = function ( data ) {
             { name: name, deleted: false },
             function ( err, accountDocument ) {
                 if ( err ) return next( err );
-                if ( !accountDocument ) return next( new restify.ResourceNotFoundError( '404' ) );
+                if ( ! accountDocument ) return next( new restify.ResourceNotFoundError( '404' ) );
 
                 var theAccountGroup = new AccountGroup();
 
@@ -453,10 +1012,10 @@ var Account = function ( data ) {
      */
     this.update = function ( next ) {
 
-        if ( !self.id )
+        if ( ! self.id )
             return next( new restify.InvalidArgumentError( 'id|null' ) );
 
-        if ( !mf.isObjectId( self.id ) )
+        if ( ! mf.isObjectId( self.id ) )
             return next( new restify.InvalidArgumentError( 'id|not ObjectId' ) );
 
         var accountDocument;
@@ -469,7 +1028,7 @@ var Account = function ( data ) {
                         { _id: self.id, deleted: false },
                         function ( err, doc ) {
                             if ( err ) return scb( err );
-                            if ( !doc ) return scb( new restify.ResourceNotFoundError( 'id|404' ) );
+                            if ( ! doc ) return scb( new restify.ResourceNotFoundError( 'id|404' ) );
 
                             accountDocument = doc;
                             scb();
@@ -507,7 +1066,7 @@ var Account = function ( data ) {
                                     // If err wasn't called. Maybe, account with
                                     // the same name is exists => this name is engaged
 
-                                    if ( !err ) {
+                                    if ( ! err ) {
                                         scb( new restify.InvalidArgumentError( 'name|engaged' ) );
                                     } else {
 
@@ -528,7 +1087,7 @@ var Account = function ( data ) {
 
                     if ( self.group ) {
 
-                        if ( !( self.group instanceof AccountGroup ) || !self.group.hasOwnProperty( 'id' ) )
+                        if ( ! ( self.group instanceof AccountGroup ) || ! self.group.hasOwnProperty( 'id' ) )
                             return scb( new restify.InvalidArgumentError( 'group|invalid object' ) );
 
                         var groupId = self.group.id;
@@ -631,7 +1190,7 @@ var Account = function ( data ) {
 
                     accountDocument.save( function ( err, newAccountDocument ) {
 
-                        self.group = self.group;
+                        //self.group = self.group;
                         self.id = newAccountDocument._id.toString();
                         self.name = newAccountDocument.name;
                         self.individualPerms = newAccountDocument.individualPerms ?
@@ -655,10 +1214,9 @@ var Account = function ( data ) {
 
     };
 
-
     this.isShort = function () {
 
-        var allowedProperties = [ 'id', 'name', 'group' ];
+        var allowedProperties = [ 'id', 'name' ];
 
         for ( var propertyName in self ) {
 
@@ -667,7 +1225,7 @@ var Account = function ( data ) {
 
                 // If propertyName is not in allowedProperties
 
-                if ( ! mf.isInArray( propertyName, allowedProperties ) ) {
+                if ( ! mf.isInArray( propertyName, allowedProperties ) && propertyName !== 'group' ) {
 
                     return false;
 
@@ -688,9 +1246,7 @@ var Account = function ( data ) {
 
         return self.hasOwnProperty( 'id' ) &&
                self.hasOwnProperty( 'name' ) &&
-               self.hasOwnProperty( 'group' ) &&
-               self.hasOwnProperty( 'perms' ) &&
-               self.hasOwnProperty( 'individualPerms' );
+               self.hasOwnProperty( 'perms' );
 
     };
 
