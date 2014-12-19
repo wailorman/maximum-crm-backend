@@ -192,7 +192,7 @@ var Account = function ( data ) {
 
 
     this.validators = {
-        id: function ( value, next ) {
+        id:    function ( value, next ) {
 
             if ( ! mf.isObjectId( value ) ) {
                 // incorrect
@@ -202,7 +202,7 @@ var Account = function ( data ) {
                 next( null );
             }
         },
-        name: function ( value, next ) {
+        name:  function ( value, next ) {
 
             if ( typeof value !== 'string' ) {
                 return next( new restify.InvalidArgumentError( 'name|not string' ) );
@@ -292,14 +292,14 @@ var Account = function ( data ) {
                 // 1. id
                 function ( pcb ) {
 
-                    if ( filter.id ){
+                    if ( filter.id ) {
 
                         if ( ! ( filter.id instanceof Array ) )
                             filter.id = [ filter.id ];
 
                         async.each( filter.id, self.validators.id, pcb );
 
-                    }else
+                    } else
                         pcb();
 
                 },
@@ -307,14 +307,14 @@ var Account = function ( data ) {
                 // 2. name
                 function ( pcb ) {
 
-                    if ( filter.name ){
+                    if ( filter.name ) {
 
                         if ( ! ( filter.name instanceof Array ) )
                             filter.name = [ filter.name ];
 
                         async.each( filter.name, self.validators.name, pcb );
 
-                    }else
+                    } else
                         pcb();
 
                 },
@@ -322,14 +322,14 @@ var Account = function ( data ) {
                 // 3. token
                 function ( pcb ) {
 
-                    if ( filter.token ){
+                    if ( filter.token ) {
 
                         if ( ! ( filter.token instanceof Array ) )
                             filter.token = [ filter.token ];
 
                         async.each( filter.token, self.validators.token, pcb );
 
-                    }else
+                    } else
                         pcb();
 
                 },
@@ -337,14 +337,14 @@ var Account = function ( data ) {
                 // 4. group
                 function ( pcb ) {
 
-                    if ( filter.group ){
+                    if ( filter.group ) {
 
                         if ( ! ( filter.group instanceof Array ) )
                             filter.group = [ filter.group ];
 
                         async.each( filter.group, self.validators.group, pcb );
 
-                    }else
+                    } else
                         pcb();
 
                 }
@@ -368,7 +368,7 @@ var Account = function ( data ) {
      * @param {object}      filter
      * @param {function}    next    ( err, {object} query )
      */
-    var prepareQuery = function ( filter, next ) {
+    this.prepareQuery = function ( filter, next ) {
 
         /*
          Allowed filter parameters:
@@ -378,11 +378,10 @@ var Account = function ( data ) {
          - token
          */
 
+        var andStatements = [];
 
-        var andStatements, statement, parameterName, parameterVariant, i;
-
-        andStatements = [];
-
+        /*if ( filter === null || filter == {} )
+         return next( null, {} );*/
 
         if ( typeof filter !== 'object' )
             return next( new restify.InvalidArgumentError( 'filter|not object' ) );
@@ -392,39 +391,53 @@ var Account = function ( data ) {
                 // 1. id
                 function ( pcb ) {
 
+                    var curOrStatements = [];
+
                     if ( filter.hasOwnProperty( 'id' ) ) {
 
-                        if ( (filter.id instanceof Array) ) {
+                        if ( typeof filter.id === 'string' ) filter.id = [ filter.id ];
+
+                        if ( filter.id instanceof Array ) {
 
                             async.each( filter.id, function ( id, ecb ) {
 
                                 if ( typeof id === 'string' ) {
 
-                                    andStatements.push( { _id: id } );
+                                    curOrStatements.push( { _id: new mf.ObjectId( id ) } );
                                     ecb();
 
                                 } else
                                     return next( new restify.InvalidArgumentError( 'filter.id(' + id + ')|not string' ) );
 
 
-                                andStatements.push( { _id: id } );
-                                ecb();
+                                //andStatements.push( { _id: id } );
+                                //ecb();
 
 
-                            }, pcb );
+                            }, function () {
+
+                                andStatements.push( { $or: curOrStatements } );
+                                pcb();
+
+                            } );
 
                         } else
                             return next( new restify.InvalidArgumentError( 'filter.id|not Array' ) );
 
 
-                    }
+                    } else
+                        pcb();
 
                 },
 
                 // 2. name
                 function ( pcb ) {
 
+                    var curOrStatements = [];
+
                     if ( filter.hasOwnProperty( 'name' ) ) {
+
+                        if ( typeof filter.name === 'string' ) filter.name = [ filter.name ];
 
                         if ( filter.name instanceof Array ) {
 
@@ -432,19 +445,25 @@ var Account = function ( data ) {
 
                                 if ( typeof name === 'string' ) {
 
-                                    andStatements.push( { name: name } );
+                                    curOrStatements.push( { name: name } );
                                     ecb();
 
                                 } else
                                     return next( new restify.InvalidArgumentError( 'filter.name(' + name + ')|not string' ) );
 
 
-                            }, pcb );
+                            }, function () {
+
+                                andStatements.push( { $or: curOrStatements } );
+                                pcb();
+
+                            } );
 
                         } else
                             return next( new restify.InvalidArgumentError( 'filter.name|not Array' ) );
 
-                    }
+                    } else
+                        pcb();
 
                 },
 
@@ -456,6 +475,8 @@ var Account = function ( data ) {
                     var groupIds = [];
 
                     if ( filter.hasOwnProperty( 'group' ) ) {
+
+                        if ( filter.group instanceof AccountGroup ) filter.group = [ filter.group ];
 
                         if ( filter.group instanceof Array ) {
 
@@ -486,14 +507,20 @@ var Account = function ( data ) {
                             return next( new restify.InternalError( 'Account prepareQuery: group|not Array' ) );
 
 
-                    }
+                    } else
+                        pcb();
 
                 }
 
             ],
             function () {
 
-                next( null, { $and: andStatements } );
+                var result = andStatements.length > 0 ? { $and: andStatements } : {};
+
+                // required param deleted: false
+                result.deleted = false;
+
+                next( null, result );
 
             }
         );
@@ -524,7 +551,7 @@ var Account = function ( data ) {
                 // 1. Validate filter
                 function ( scb ) {
 
-                    validateFilter( filter, function ( err ) {
+                    self.validateParameters( filter, function ( err ) {
 
                         if ( err ) return next( err );
 
@@ -537,7 +564,7 @@ var Account = function ( data ) {
                 // 2. Prepare query
                 function ( scb ) {
 
-                    prepareQuery( filter, function ( err, preparedQuery ) {
+                    self.prepareQuery( filter, function ( err, preparedQuery ) {
 
                         if ( err ) return next( err );
 
@@ -567,7 +594,7 @@ var Account = function ( data ) {
                 // 4. Convert document
                 function ( scb ) {
 
-                    accountDocument.toFullObject( self, null, function ( err ) {
+                    self.documentToFullObject( accountDocument, null, function ( err ) {
 
                         if ( err ) return next( err );
 
@@ -577,7 +604,10 @@ var Account = function ( data ) {
 
                 }
 
-            ]
+            ],
+            function () {
+                next( null, self );
+            }
         );
 
     };
@@ -629,173 +659,204 @@ var Account = function ( data ) {
     };
 
 
-    Document.prototype.Account = {
+    this.documentToFullObject = function ( document, propertiesToAdd, next ) {
 
-        toFullObject: function ( object, propertiesToAdd, next ) {
+        /*
 
-            /*
+         Requires properties for full Account object:
+         - id
+         - name
+         - group
+         - perms
+         - individualPerms
 
-             Requires properties for full Account object:
-             - id
-             - name
-             - group
-             - perms
-             - individualPerms
+         Allowed properties for full Account object:
+         - token
+         - password (hashed)
 
-             Allowed properties for full Account object:
-             - token
-             - password (hashed)
+         */
 
-             */
+        //var document = this;
+        var object = self;
 
-            var document = this;
-
-            //var allowedPropertiesToAdd = [ 'password', 'token' ];
-
-
-            // Some of required properties for full Account object
-            var documentFieldsConvertRules = [
-
-                /* [ fieldInDocument, propertyInObject ] */
-
-                [ '_id', 'id' ],
-                [ 'name', 'name' ],
-                [ 'password', 'password' ],
-                [ 'individualPerms', 'individualPerms' ]
-                // + group (because we can get it only in async mode)
-            ];
-
-            var i, curDocumentFiled, curObjectProperty;
+        //var allowedPropertiesToAdd = [ 'password', 'token' ];
 
 
-            async.series(
-                [
+        // Some of required properties for full Account object
+        var documentFieldsConvertRules = [
 
-                    // 1. Add basic req. properties
-                    function ( scb ) {
+            /* [ fieldInDocument, propertyInObject ] */
 
-                        for ( i in documentFieldsConvertRules ) {
+            [ '_id', 'id' ],
+            [ 'name', 'name' ],
+            [ 'password', 'password' ],
+            [ 'individualPerms', 'individualPerms' ]
+            // + group (because we can get it only in async mode)
+        ];
 
-                            // for^ check statement
-                            if ( documentFieldsConvertRules.hasOwnProperty( i ) ) {
+        var i, curDocumentFiled, curObjectProperty;
 
-                                // Does document has filed we find
-                                if ( document.hasOwnProperty( documentFieldsConvertRules[ i ][ 0 ] ) ) {
 
-                                    curDocumentFiled = documentFieldsConvertRules[ i ][ 0 ];
-                                    curObjectProperty = documentFieldsConvertRules[ i ][ 1 ];
+        async.series(
+            [
 
-                                    object[ curObjectProperty ] = document[ curDocumentFiled ];
+                // . Add basic req. properties
+                function ( scb ) {
 
-                                    scb();
+                    /*for ( i in documentFieldsConvertRules ) {
 
-                                }
+                        // for^ check statement
+                        if ( documentFieldsConvertRules.hasOwnProperty( i ) ) {
+
+                            // Does document has filed we find
+                            if ( document.hasOwnProperty( documentFieldsConvertRules[ i ][ 0 ] ) ) {
+
+                                curDocumentFiled = documentFieldsConvertRules[ i ][ 0 ];
+                                curObjectProperty = documentFieldsConvertRules[ i ][ 1 ];
+
+                                object[ curObjectProperty ] = document[ curDocumentFiled ];
+
+                                scb();
 
                             }
 
                         }
 
-                    },
+                    }*/
 
-                    // 2. Add group req. property
-                    function ( scb ) {
+                    if ( document._id )
+                        self.id = document._id.toString();
 
-                        if ( document.hasOwnProperty( 'group' ) ) {
+                    if ( document.name )
+                        self.name = document.name;
 
-                            object.group = new AccountGroup();
-                            object.group.getById( document.group.toString(), function ( err ) {
+                    if ( document.individualPerms )
+                        self.individualPerms = document.individualPerms;
 
-                                if ( err ) return next( err );
-                                scb();
+                    scb();
 
-                            } );
+                },
 
-                        } else {
+                // . Add group req. property
+                function ( scb ) {
+
+                    if ( document.group ) {
+
+                        self.group = new AccountGroup();
+                        self.group.getById( document.group.toString(), function ( err ) {
+
+                            if ( err ) return next( err );
                             scb();
-                        }
 
-                    },
+                        } );
 
-
-                    // 3. Add not req. properties
-                    function ( scb ) {
-
-                        // password
-                        if ( mf.isInArray( 'password', propertiesToAdd ) )
-                            object.password = document.password;
-
-                        // token
-                        // TODO token
-
+                    } else {
                         scb();
+                    }
+
+                },
+
+
+                // . Merge permissions
+                function ( scb ) {
+
+                    if ( self.group ) {
+
+                        self.perms = mf.mergePerms( self.group.perms, self.individualPerms );
+
+                    }else if( self.individualPerms ){
+
+                        self.perms = self.individualPerms;
+
+                    }else{
+
+                        self.perms = {};
 
                     }
 
-                ],
-                function () {
+                    scb();
 
-                    next( null, object );
+                },
+
+
+                // . Add not req. properties
+                function ( scb ) {
+
+                    // password
+                    if ( mf.isInArray( 'password', propertiesToAdd ) )
+                        object.password = document.password;
+
+                    // token
+                    // TODO token
+
+                    scb();
 
                 }
-            );
 
+            ],
+            function () {
 
-        },
+                next( null, self );
 
-        toShortObject: function ( object, next ) {
+            }
+        );
 
-            /*
-
-             Fields in short Account object
-             - id
-             - name
-             - group (if exists)
-
-             */
-
-            var document = this;
-
-            async.series(
-                [
-                    // 1. Add static (synchronously get) properties from document
-                    function ( scb ) {
-
-                        object.id = document._id.toString();
-                        object.name = document.name;
-
-                        scb();
-
-                    },
-
-                    // 2. Asynchronously adding group
-                    function ( scb ) {
-
-                        if ( document.group ) {
-
-                            object.group = new AccountGroup();
-                            object.group.getById( document.group.toString(), function ( err ) {
-
-                                if ( err ) return next( err );
-
-                                scb();
-
-                            } );
-
-                        } else {
-                            scb();
-                        }
-
-                    }
-                ],
-                function () {
-                    next( null, object );
-                }
-            );
-
-
-        }
 
     };
+
+    this.documentToShortObject = function ( document, object, next ) {
+
+        /*
+
+         Fields in short Account object
+         - id
+         - name
+         - group (if exists)
+
+         */
+
+        //var document = this;
+
+        async.series(
+            [
+                // 1. Add static (synchronously get) properties from document
+                function ( scb ) {
+
+                    object.id = document._id.toString();
+                    object.name = document.name;
+
+                    scb();
+
+                },
+
+                // 2. Asynchronously adding group
+                function ( scb ) {
+
+                    if ( document.group ) {
+
+                        object.group = new AccountGroup();
+                        object.group.getById( document.group.toString(), function ( err ) {
+
+                            if ( err ) return next( err );
+
+                            scb();
+
+                        } );
+
+                    } else {
+                        scb();
+                    }
+
+                }
+            ],
+            function () {
+                next( null, object );
+            }
+        );
+
+
+    };
+
 
     /**
      * Get Account by id
@@ -1248,6 +1309,10 @@ var Account = function ( data ) {
                self.hasOwnProperty( 'name' ) &&
                self.hasOwnProperty( 'perms' );
 
+    };
+
+    this.value = function () {
+        return self;
     };
 
 };

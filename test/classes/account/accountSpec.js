@@ -949,6 +949,198 @@ describe( 'Account module testing', function () {
 
     } );
 
+    xdescribe( '.prepareQuery()', function () {
+
+        before( function ( done ) {
+
+            reCreate.full( function ( err ) {
+                should.not.exist( err );
+                done();
+            } );
+
+        } );
+
+        it( 'should prepare query by simple filter', function ( done ) {
+
+            var theAccountGroups = [];
+            var suiteAccountGroup;
+
+            async.series(
+                [
+                    // Creating AccountGroups for testing
+                    function ( scb ) {
+
+                        async.each(
+                            [
+                                // Parameters to create new AccountGroups
+                                { name: 'test AccountGroup #1' },
+                                { name: 'test AccountGroup #2' }
+                            ],
+                            function ( parameters, ecb ) {
+
+                                suiteAccountGroup = new AccountGroup();
+                                suiteAccountGroup.create( parameters, ecb );
+                                theAccountGroups.push( suiteAccountGroup );
+
+                            },
+                            function ( err ) {
+
+                                should.not.exist( err );
+                                scb();
+
+                            }
+                        );
+
+                    },
+
+                    // testing
+                    function ( scb ) {
+
+                        async.eachSeries(
+                            [
+                                [
+                                    {}, // What we actually pass to filter
+                                    {}  // What we should to get
+                                ],
+
+
+                                [
+                                    { id: '548dfad210b13dc0226ef8c1' },
+                                    {
+                                        $and: [
+                                            {
+                                                $or: [
+                                                    { _id: '548dfad210b13dc0226ef8c1' }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                [
+                                    { id: [ '548dfad210b13dc0226ef8c1', '548dfad210b13dc0226ef8c2' ] },
+                                    {
+                                        $and: [
+                                            {
+                                                $or: [
+                                                    { _id: '548dfad210b13dc0226ef8c1' },
+                                                    { _id: '548dfad210b13dc0226ef8c2' }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+
+
+                                [
+                                    { name: 'wailorman' },
+                                    {
+                                        $and: [
+                                            {
+                                                $or: [
+                                                    { name: 'wailorman' }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                [
+                                    { name: [ 'wailorman', 'snoberik' ] },
+                                    {
+                                        $and: [
+                                            {
+                                                $or: [
+                                                    { name: 'wailorman' },
+                                                    { name: 'snoberik' }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+
+
+                                [
+                                    { group: theAccountGroups[ 0 ] },
+                                    {
+                                        $and: [
+                                            {
+                                                group: {
+                                                    $in: [ theAccountGroups[ 0 ].id ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                [
+                                    {
+                                        group: [ theAccountGroups[ 0 ], theAccountGroups[ 1 ].id ]
+                                    },
+                                    {
+                                        $and: [
+                                            {
+                                                group: {
+                                                    $in: [ theAccountGroups[ 0 ].id, theAccountGroups[ 1 ].id ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+
+
+                                [
+                                    {
+                                        name:  [ 'wailorman', 'snoberik' ],
+                                        group: [ theAccountGroups[ 0 ], theAccountGroups[ 1 ] ]
+                                    },
+                                    {
+                                        $and: [
+                                            {
+                                                $or: [
+                                                    { name: 'wailorman' },
+                                                    { name: 'snoberik' }
+                                                ]
+                                            },
+
+                                            {
+                                                group: {
+                                                    $in: [ theAccountGroups[ 0 ].id, theAccountGroups[ 1 ].id ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            ],
+                            function ( parameters, escb ) {
+
+                                theNewAccount.prepareQuery( parameters[ 0 ], function ( err, query ) {
+                                    should.not.exist( err );
+
+                                    query.should.be.eql( parameters[ 1 ] );
+
+                                    escb();
+
+                                } );
+
+
+                            },
+                            function () {
+                                scb();
+                            }
+                        );
+
+                    }
+                ],
+                function () {
+
+                    done();
+
+                }
+            );
+
+
+        } );
+
+    } );
+
 
     xdescribe( '.create', function () {
 
@@ -1471,7 +1663,7 @@ describe( 'Account module testing', function () {
 
     } );
 
-    xdescribe( '.findOne', function () {
+    describe( '.findOne', function () {
 
         // reCreate
         beforeEach( function ( done ) {
@@ -1482,7 +1674,7 @@ describe( 'Account module testing', function () {
 
         } );
 
-        xit( 'should find full by id, name, group', function ( done ) {
+        it( 'should find full by id, name, group', function ( done ) {
 
             testTemplates.findOne.shouldFind( 'findOne', [
                 { id: theNewAccount.id },
@@ -1585,7 +1777,7 @@ describe( 'Account module testing', function () {
                 var acc = new Account();
 
                 acc.create( {
-                    name: 'severalFull' + n,
+                    name:            'severalFull' + n,
                     password:        '123',
                     group:           theNewAccountGroup,
                     individualPerms: {
@@ -1635,7 +1827,7 @@ describe( 'Account module testing', function () {
                 var acc = new Account();
 
                 acc.create( {
-                    name: 'severalFull' + n,
+                    name:            'severalFull' + n,
                     password:        '123',
                     group:           theNewAccountGroup,
                     individualPerms: {
@@ -1719,7 +1911,7 @@ describe( 'Account module testing', function () {
                 var acc = new Account();
 
                 acc.create( {
-                    name: 'severalFull' + n,
+                    name:            'severalFull' + n,
                     password:        '123',
                     group:           theNewAccountGroup,
                     individualPerms: {
@@ -1769,7 +1961,7 @@ describe( 'Account module testing', function () {
                 var acc = new Account();
 
                 acc.create( {
-                    name: 'severalFull' + n,
+                    name:            'severalFull' + n,
                     password:        '123',
                     group:           theNewAccountGroup,
                     individualPerms: {

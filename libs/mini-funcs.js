@@ -273,4 +273,4 @@ module.exports.isInArray = function ( varToFind, array ) {
     return false;
 };
 
-module.exports.ObjectId = ObjectId;
+module.exports.ObjectId = require('mongodb').ObjectID;
