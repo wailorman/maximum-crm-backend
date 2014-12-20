@@ -555,7 +555,7 @@ var Account = function ( data ) {
 
                     self.validateParameters( filter, function ( err ) {
 
-                        if ( err ) return next( err );
+                        if ( err ) return scb( err );
 
                         scb();
 
@@ -568,9 +568,9 @@ var Account = function ( data ) {
 
                     self.prepareQuery( filter, function ( err, preparedQuery ) {
 
-                        if ( err ) return next( err );
+                        if ( err ) return scb( err );
 
-                        if ( ! preparedQuery ) return next( new restify.ResourceNotFoundError( '404' ) );
+                        if ( ! preparedQuery ) return scb( new restify.ResourceNotFoundError( '404' ) );
 
                             query = preparedQuery;
 
@@ -585,8 +585,8 @@ var Account = function ( data ) {
 
                     AccountModel.findOne( query, function ( err, doc ) {
 
-                        if ( err ) return next( err );
-                        if ( ! doc ) return next( new restify.ResourceNotFoundError( '404' ) );
+                        if ( err ) return scb( err );
+                        if ( ! doc ) return scb( new restify.ResourceNotFoundError( '404' ) );
 
                         accountDocument = doc;
 
@@ -601,7 +601,7 @@ var Account = function ( data ) {
 
                     self.documentToFullObject( accountDocument, null, function ( err ) {
 
-                        if ( err ) return next( err );
+                        if ( err ) return scb( err );
 
                         scb();
 
@@ -610,7 +610,8 @@ var Account = function ( data ) {
                 }
 
             ],
-            function () {
+            function ( err ) {
+                if ( err ) return next( err );
                 next( null, self );
             }
         );

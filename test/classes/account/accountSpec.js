@@ -116,13 +116,15 @@ var testTemplates = {
          */
         shouldCallErr: function ( funcName, filters, done ) {
 
-            async.eachSeries(
+            async.each(
                 filters,
                 function ( filter, escb ) {
 
-                    theNewAccount = new Account();
+                    var theLocalNewAccount;
 
-                    theNewAccount[ funcName ]( filter, function ( err ) {
+                    theLocalNewAccount = new Account();
+
+                    theLocalNewAccount[ funcName ]( filter, function ( err ) {
 
                         should.exist( err );
 
@@ -137,6 +139,9 @@ var testTemplates = {
             );
 
         }
+
+
+
     },
     find:    {
 
@@ -1703,7 +1708,9 @@ describe( 'Account module testing', function () {
 
                 //{ group: '' },
                 //{ group: false }
-            ], done );
+            ], function() {
+                done();
+            } );
 
         } );
 
