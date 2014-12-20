@@ -1685,35 +1685,36 @@ describe( 'Account module testing', function () {
         } );
 
         // TODO
-        xit( 'it should find by multiplie params' );
+        it( 'it should find by multiplie params' );
 
-        xit( 'should not find with invalid types', function ( done ) {
+        it( 'should not find with invalid types', function ( done ) {
 
             testTemplates.findOne.shouldCallErr( 'findOne', [
-                {},
-                null,
+                //{},
+                //null,
 
-                { id: '' },
-                { id: false },
+                //{ id: '' },
+                //{ id: false },
                 { id: theNewAccountGroup },
 
-                { name: '' },
-                { name: false },
-                { name: theNewAccountGroup },
+                //{ name: '' },
+                //{ name: false },
+                { name: theNewAccountGroup }
 
-                { group: '' },
-                { group: false }
+                //{ group: '' },
+                //{ group: false }
             ], done );
 
         } );
 
-        xit( 'should find full by token' );
+        it( 'should find full by token' );
 
         // TODO
-        xit( 'should not find by nonexistent AccountGroup', function ( done ) {
+        it( 'should not find by nonexistent AccountGroup', function ( done ) {
 
             async.series(
                 [
+                    // . Remove AccountGroup
                     function ( scb ) {
 
                         theNewAccountGroup.remove( function ( err ) {
@@ -1726,11 +1727,19 @@ describe( 'Account module testing', function () {
 
                     },
 
-                    function () {
+                    // . Try to find
+                    function ( scb ) {
 
                         testTemplates.findOne.shouldReturn404( 'findOne', [
                             { group: theNewAccount.group }
-                        ], done );
+                        ], scb );
+
+                    },
+
+                    // . Recreate
+                    function () {
+
+                        reCreate.full( done );
 
                     }
                 ]
@@ -1738,13 +1747,23 @@ describe( 'Account module testing', function () {
 
         } );
 
-        xit( 'should not find nonexistent', function ( done ) {
+        it( 'should not find nonexistent', function ( done ) {
 
             testTemplates.findOne.shouldReturn404( 'findOne', [ { id: '000000000000000000000000' } ], done );
 
         } );
 
-        xit( 'should return 404 when find by correctly password or individualPerms', function ( done ) {
+        it( 'should return 404 on empty filter', function ( done ) {
+
+            testTemplates.findOne.shouldReturn404( 'findOne',
+                [
+                    {}
+                ],
+                done );
+
+        } );
+
+        it( 'should return 404 when find by correctly password or individualPerms', function ( done ) {
 
             testTemplates.findOne.shouldReturn404( 'findOne',
                 [

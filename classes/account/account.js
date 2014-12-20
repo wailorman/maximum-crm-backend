@@ -253,7 +253,7 @@ var Account = function ( data ) {
 
                     if ( err instanceof restify.ResourceNotFoundError ) {
 
-                        next( new restify.InvalidArgumentError( 'group|404' ) );
+                        next( new restify.ResourceNotFoundError( 'group|404' ) );
 
                     } else if ( err instanceof restify.InvalidArgumentError ) {
 
@@ -393,7 +393,7 @@ var Account = function ( data ) {
 
                     var curOrStatements = [];
 
-                    if ( filter.hasOwnProperty( 'id' ) ) {
+                    if ( filter.id ) {
 
                         if ( typeof filter.id === 'string' ) filter.id = [ filter.id ];
 
@@ -435,7 +435,7 @@ var Account = function ( data ) {
 
                     var curOrStatements = [];
 
-                    if ( filter.hasOwnProperty( 'name' ) ) {
+                    if ( filter.name ) {
 
                         if ( typeof filter.name === 'string' ) filter.name = [ filter.name ];
 
@@ -474,7 +474,7 @@ var Account = function ( data ) {
 
                     var groupIds = [];
 
-                    if ( filter.hasOwnProperty( 'group' ) ) {
+                    if ( filter.group ) {
 
                         if ( filter.group instanceof AccountGroup ) filter.group = [ filter.group ];
 
@@ -515,10 +515,12 @@ var Account = function ( data ) {
             ],
             function () {
 
-                var result = andStatements.length > 0 ? { $and: andStatements } : {};
+                var result = andStatements.length > 0 ? { $and: andStatements } : null;
 
-                // required param deleted: false
-                result.deleted = false;
+                if ( result ) {
+                    // required param deleted: false
+                    result.deleted = false;
+                }
 
                 next( null, result );
 
@@ -568,7 +570,9 @@ var Account = function ( data ) {
 
                         if ( err ) return next( err );
 
-                        query = preparedQuery;
+                        if ( ! preparedQuery ) return next( new restify.ResourceNotFoundError( '404' ) );
+
+                            query = preparedQuery;
 
                         scb();
 
@@ -582,6 +586,7 @@ var Account = function ( data ) {
                     AccountModel.findOne( query, function ( err, doc ) {
 
                         if ( err ) return next( err );
+                        if ( ! doc ) return next( new restify.ResourceNotFoundError( '404' ) );
 
                         accountDocument = doc;
 
@@ -705,24 +710,24 @@ var Account = function ( data ) {
 
                     /*for ( i in documentFieldsConvertRules ) {
 
-                        // for^ check statement
-                        if ( documentFieldsConvertRules.hasOwnProperty( i ) ) {
+                     // for^ check statement
+                     if ( documentFieldsConvertRules.hasOwnProperty( i ) ) {
 
-                            // Does document has filed we find
-                            if ( document.hasOwnProperty( documentFieldsConvertRules[ i ][ 0 ] ) ) {
+                     // Does document has filed we find
+                     if ( document.hasOwnProperty( documentFieldsConvertRules[ i ][ 0 ] ) ) {
 
-                                curDocumentFiled = documentFieldsConvertRules[ i ][ 0 ];
-                                curObjectProperty = documentFieldsConvertRules[ i ][ 1 ];
+                     curDocumentFiled = documentFieldsConvertRules[ i ][ 0 ];
+                     curObjectProperty = documentFieldsConvertRules[ i ][ 1 ];
 
-                                object[ curObjectProperty ] = document[ curDocumentFiled ];
+                     object[ curObjectProperty ] = document[ curDocumentFiled ];
 
-                                scb();
+                     scb();
 
-                            }
+                     }
 
-                        }
+                     }
 
-                    }*/
+                     }*/
 
                     if ( document._id )
                         self.id = document._id.toString();
@@ -764,11 +769,11 @@ var Account = function ( data ) {
 
                         self.perms = mf.mergePerms( self.group.perms, self.individualPerms );
 
-                    }else if( self.individualPerms ){
+                    } else if ( self.individualPerms ) {
 
                         self.perms = self.individualPerms;
 
-                    }else{
+                    } else {
 
                         self.perms = {};
 
