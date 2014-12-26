@@ -184,7 +184,16 @@ var mergePerms = function ( obj1, obj2 ) {
 module.exports.mergePerms = mergePerms;
 
 
-// TODO write unit tests for validatePerms
+
+
+/**
+ * Validate perms object
+ *
+ * @todo write unit tests for validatePerms
+ *
+ * @param {object} perms
+ * @returns {boolean}
+ */
 module.exports.validatePerms = function ( perms ) {
 
     function checkObjectLevel( obj ) {

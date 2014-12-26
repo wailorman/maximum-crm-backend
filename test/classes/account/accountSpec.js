@@ -1,15 +1,15 @@
-var should = require( 'should' );
-var mongoose = require( 'mongoose' );
-var async = require( 'async' );
-var passwordHash = require( 'password-hash' );
-var mf = require( '../../../libs/mini-funcs.js' );
-var restify = require( 'restify' );
+var should            = require( 'should' ),
+    mongoose          = require( 'mongoose' ),
+    async             = require( 'async' ),
+    passwordHash      = require( 'password-hash' ),
+    mf                = require( '../../../libs/mini-funcs.js' ),
+    restify           = require( 'restify' ),
 
-var Account = require( '../../../classes/account/account.js' );
-var AccountModel = require( '../../../classes/account/account-model.js' ).AccountModel;
+    Account           = require( '../../../classes/account/account.js' ),
+    AccountModel      = require( '../../../classes/account/account-model.js' ).AccountModel,
 
-var AccountGroup = require( '../../../classes/account-group/account-group.js' );
-var AccountGroupModel = require( '../../../classes/account-group/account-group-model.js' ).AccountGroupModel;
+    AccountGroup      = require( '../../../classes/account-group/account-group.js' ),
+    AccountGroupModel = require( '../../../classes/account-group/account-group-model.js' ).AccountGroupModel;
 
 
 var theNewAccount, theNewAccounts, theNewAccountGroup, theNewAccountArguments;
@@ -141,7 +141,6 @@ var testTemplates = {
         }
 
 
-
     },
     find:    {
 
@@ -164,7 +163,7 @@ var testTemplates = {
                 function ( filter, escb ) {
 
                     theNewAccounts = [];
-                    theNewAccounts.Account[ funcName ]( filter, function ( err ) {
+                    theNewAccounts[ funcName ]( filter, function ( err ) {
 
                         should.not.exist( err );
 
@@ -172,26 +171,17 @@ var testTemplates = {
 
                             theNewAccounts.length.should.be.eql( 1 );
 
-                        }
-                        else {
+                        } else if ( typeof expectedNumberOfObjects === 'string' && expectedNumberOfObjects.match( /(several|many|much)/igm ) ) {
 
-                            if ( typeof expectedNumberOfObjects === 'string' && expectedNumberOfObjects.match( /(several|many|much)/igm ) ) {
+                            theNewAccounts.length.should.be.greaterThan( 0 );
 
-                                theNewAccounts.length.should.be.greaterThan( 0 );
+                        } else if ( typeof expectedNumberOfObjects === 'number' ) {
 
-                            } else {
+                            theNewAccounts.length.should.be.eql( expectedNumberOfObjects );
 
-                                if ( typeof expectedNumberOfObjects === 'number' ) {
+                        } else {
 
-                                    theNewAccounts.length.should.be.eql( expectedNumberOfObjects );
-
-                                } else {
-
-                                    theNewAccounts.length.should.be.greaterThan( 0 );
-
-                                }
-
-                            }
+                            theNewAccounts.length.should.be.greaterThan( 0 );
 
                         }
 
@@ -208,16 +198,16 @@ var testTemplates = {
 
                                 // Use short mode
 
-                                theNewAccount.isShort().should.be.eql( true );
+                                theNewAccounts[ i ].isShort().should.be.eql( true );
 
                             } else {
 
                                 // Use full mode
 
-                                theNewAccount.isFull().should.be.eql( true );
+                                theNewAccounts[ i ].isFull().should.be.eql( true );
 
-                                if ( theNewAccount.hasOwnProperty( 'password' ) )
-                                    passwordHash.isHashed( theNewAccount.password ).should.be.eql( true );
+                                if ( theNewAccounts[ i ].hasOwnProperty( 'password' ) )
+                                    passwordHash.isHashed( theNewAccounts[ i ].password ).should.be.eql( true );
 
                             }
 
@@ -252,7 +242,7 @@ var testTemplates = {
 
                     theNewAccounts = [];
 
-                    theNewAccounts.Account[ funcName ]( filter, function ( err ) {
+                    theNewAccounts[ funcName ]( filter, function ( err ) {
 
                         should.exist( err );
 
@@ -287,7 +277,7 @@ var testTemplates = {
 
                     theNewAccounts = [];
 
-                    theNewAccount.Account[ funcName ]( filter, function ( err ) {
+                    theNewAccount[ funcName ]( filter, function ( err ) {
 
                         should.exist( err );
 
@@ -497,7 +487,7 @@ describe( 'Account module testing', function () {
     } );
 
 
-    xdescribe( 'objectSize', function () {
+    describe( 'objectSize', function () {
 
         describe( '.isShort', function () {
 
@@ -647,6 +637,7 @@ describe( 'Account module testing', function () {
                 theNewAccount.id = '00000000000000000000000';
                 theNewAccount.name = 'wailorman';
                 theNewAccount.perms = {};
+                theNewAccount.individualPerms = {};
 
                 theNewAccount.isFull().should.be.eql( true );
 
@@ -954,7 +945,7 @@ describe( 'Account module testing', function () {
 
     } );
 
-    xdescribe( '.prepareQuery()', function () {
+    describe( '.prepareFindQuery()', function () {
 
         before( function ( done ) {
 
@@ -1005,33 +996,35 @@ describe( 'Account module testing', function () {
                             [
                                 [
                                     {}, // What we actually pass to filter
-                                    {}  // What we should to get
+                                    { deleted: false }  // What we should to get
                                 ],
 
 
                                 [
                                     { id: '548dfad210b13dc0226ef8c1' },
                                     {
-                                        $and: [
+                                        $and:    [
                                             {
                                                 $or: [
-                                                    { _id: '548dfad210b13dc0226ef8c1' }
+                                                    { _id: mf.ObjectId( '548dfad210b13dc0226ef8c1' ) }
                                                 ]
                                             }
-                                        ]
+                                        ],
+                                        deleted: false
                                     }
                                 ],
                                 [
                                     { id: [ '548dfad210b13dc0226ef8c1', '548dfad210b13dc0226ef8c2' ] },
                                     {
-                                        $and: [
+                                        $and:    [
                                             {
                                                 $or: [
-                                                    { _id: '548dfad210b13dc0226ef8c1' },
-                                                    { _id: '548dfad210b13dc0226ef8c2' }
+                                                    { _id: mf.ObjectId( '548dfad210b13dc0226ef8c1' ) },
+                                                    { _id: mf.ObjectId( '548dfad210b13dc0226ef8c2' ) }
                                                 ]
                                             }
-                                        ]
+                                        ],
+                                        deleted: false
                                     }
                                 ],
 
@@ -1039,26 +1032,28 @@ describe( 'Account module testing', function () {
                                 [
                                     { name: 'wailorman' },
                                     {
-                                        $and: [
+                                        $and:    [
                                             {
                                                 $or: [
                                                     { name: 'wailorman' }
                                                 ]
                                             }
-                                        ]
+                                        ],
+                                        deleted: false
                                     }
                                 ],
                                 [
                                     { name: [ 'wailorman', 'snoberik' ] },
                                     {
-                                        $and: [
+                                        $and:    [
                                             {
                                                 $or: [
                                                     { name: 'wailorman' },
                                                     { name: 'snoberik' }
                                                 ]
                                             }
-                                        ]
+                                        ],
+                                        deleted: false
                                     }
                                 ],
 
@@ -1066,13 +1061,14 @@ describe( 'Account module testing', function () {
                                 [
                                     { group: theAccountGroups[ 0 ] },
                                     {
-                                        $and: [
+                                        $and:    [
                                             {
                                                 group: {
-                                                    $in: [ theAccountGroups[ 0 ].id ]
+                                                    $in: [ mf.ObjectId( theAccountGroups[ 0 ].id ) ]
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        deleted: false
                                     }
                                 ],
                                 [
@@ -1080,13 +1076,14 @@ describe( 'Account module testing', function () {
                                         group: [ theAccountGroups[ 0 ], theAccountGroups[ 1 ].id ]
                                     },
                                     {
-                                        $and: [
+                                        $and:    [
                                             {
                                                 group: {
-                                                    $in: [ theAccountGroups[ 0 ].id, theAccountGroups[ 1 ].id ]
+                                                    $in: [ mf.ObjectId( theAccountGroups[ 0 ].id ), mf.ObjectId( theAccountGroups[ 1 ].id ) ]
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        deleted: false
                                     }
                                 ],
 
@@ -1097,7 +1094,7 @@ describe( 'Account module testing', function () {
                                         group: [ theAccountGroups[ 0 ], theAccountGroups[ 1 ] ]
                                     },
                                     {
-                                        $and: [
+                                        $and:    [
                                             {
                                                 $or: [
                                                     { name: 'wailorman' },
@@ -1107,16 +1104,17 @@ describe( 'Account module testing', function () {
 
                                             {
                                                 group: {
-                                                    $in: [ theAccountGroups[ 0 ].id, theAccountGroups[ 1 ].id ]
+                                                    $in: [ mf.ObjectId( theAccountGroups[ 0 ].id ), mf.ObjectId( theAccountGroups[ 1 ].id ) ]
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        deleted: false
                                     }
                                 ]
                             ],
                             function ( parameters, escb ) {
 
-                                theNewAccount.prepareQuery( parameters[ 0 ], function ( err, query ) {
+                                theNewAccount.prepareFindQuery( parameters[ 0 ], function ( err, query ) {
                                     should.not.exist( err );
 
                                     query.should.be.eql( parameters[ 1 ] );
@@ -1147,7 +1145,7 @@ describe( 'Account module testing', function () {
     } );
 
 
-    xdescribe( '.create', function () {
+    describe( '.create', function () {
 
         // Recreate Accounts and AccountGroups
         beforeEach( function ( done ) {
@@ -1279,9 +1277,9 @@ describe( 'Account module testing', function () {
 
 
                         // password
-                        theNewAccount.should.have.property( 'password' );
-                        theNewAccount.password.should.be.type( 'string' );
-                        passwordHash.isHashed( theNewAccount.password ).should.eql( true );
+                        //theNewAccount.should.have.property( 'password' );
+                        //theNewAccount.password.should.be.type( 'string' );
+                        //passwordHash.isHashed( theNewAccount.password ).should.eql( true );
 
                         // individualPerms
                         if ( accountData.individualPerms ) {
@@ -1469,7 +1467,7 @@ describe( 'Account module testing', function () {
                                     var someNewAccount = new Account();
 
                                     someNewAccount.create( {
-                                            name:            'mergeAccount',
+                                            name:            'mergeAccount2',
                                             password:        '123',
                                             individualPerms: {
                                                 hall:   {
@@ -1493,7 +1491,7 @@ describe( 'Account module testing', function () {
                                     var someNewAccount = new Account();
 
                                     someNewAccount.create( {
-                                            name:     'mergeAccount',
+                                            name:     'mergeAccount3',
                                             password: '123',
                                             group:    theNewAccountGroup
                                         },
@@ -1605,7 +1603,7 @@ describe( 'Account module testing', function () {
     } );
 
 
-    xdescribe( '.findOneShort', function () {
+    describe( '.findOneShort', function () {
 
         // reCreate
         beforeEach( function ( done ) {
@@ -1647,7 +1645,7 @@ describe( 'Account module testing', function () {
 
         } );
 
-        it( 'should find short by token' );
+        //it( 'should find short by token' );
 
         it( 'should not find nonexistent', function ( done ) {
 
@@ -1690,7 +1688,24 @@ describe( 'Account module testing', function () {
         } );
 
         // TODO
-        it( 'it should find by multiplie params' );
+        it( 'it should find by multiplie params', function ( done ) {
+
+            var oldAccount = theNewAccount;
+
+            theNewAccount = new Account();
+            theNewAccount.findOne(
+                { id: oldAccount.id, group: oldAccount.group },
+                function ( err ) {
+                    should.not.exist( err );
+
+                    theNewAccount.id.should.be.eql( oldAccount.id );
+                    theNewAccount.isFull().should.eql( true );
+
+                    done();
+                }
+            );
+
+        } );
 
         it( 'should not find with invalid types', function ( done ) {
 
@@ -1708,13 +1723,13 @@ describe( 'Account module testing', function () {
 
                 //{ group: '' },
                 //{ group: false }
-            ], function() {
+            ], function () {
                 done();
             } );
 
         } );
 
-        it( 'should find full by token' );
+        //it( 'should find full by token' );
 
         // TODO
         it( 'should not find by nonexistent AccountGroup', function ( done ) {
@@ -1783,7 +1798,7 @@ describe( 'Account module testing', function () {
 
     } );
 
-    xdescribe( '.find', function () {
+    describe( 'Array.findAccounts', function () {
 
         // reCreate
         beforeEach( function ( done ) {
@@ -1796,39 +1811,43 @@ describe( 'Account module testing', function () {
 
         it( 'should find all Accounts by passing empty filter', function ( done ) {
 
-            async.times( 3, function ( tcb ) {
+            cleanUp.Accounts( function () {
 
-                // First - create three Accounts with same group
+                async.times( 3, function ( n, tcb ) {
 
-                var acc = new Account();
+                    // First - create three Accounts with same group
 
-                acc.create( {
-                    name:            'severalFull' + n,
-                    password:        '123',
-                    group:           theNewAccountGroup,
-                    individualPerms: {
-                        hall: {
-                            create: true
+                    var acc = new Account();
+
+                    acc.create( {
+                        name:            'severalFull' + n,
+                        password:        '123',
+                        group:           theNewAccountGroup,
+                        individualPerms: {
+                            hall: {
+                                create: true
+                            }
                         }
-                    }
-                }, function ( err ) {
+                    }, function ( err ) {
 
-                    should.not.exist( err );
-                    tcb();
+                        should.not.exist( err );
+                        tcb();
+
+                    } );
+
+
+                }, function () {
+
+                    // Second - find them
+
+                    testTemplates.find.shouldFind(
+                        'findAccounts',
+                        [ {} ],
+                        3,
+                        done
+                    );
 
                 } );
-
-
-            }, function () {
-
-                // Second - find them
-
-                testTemplates.find.shouldFind(
-                    'find',
-                    [ {} ],
-                    3,
-                    done
-                );
 
             } );
 
@@ -1836,80 +1855,68 @@ describe( 'Account module testing', function () {
 
         it( 'should find full one by id, name', function ( done ) {
 
-            testTemplates.find.shouldFind( 'find',
+            //cleanUp.Accounts( function () {
+
+            testTemplates.find.shouldFind( 'findAccounts',
                 [
-                    { id: theNewAccountArguments.id },
-                    { name: theNewAccountArguments.name }
+                    { id: theNewAccount.id },
+                    { name: theNewAccount.name }
                 ], 1, done );
+
+            //} );
 
         } );
 
         it( 'should find full !several! by group', function ( done ) {
 
-            async.times( 3, function ( tcb ) {
+            cleanUp.Accounts( function () {
 
-                // First - create three Accounts with same group
+                async.times( 3, function ( n, tcb ) {
 
-                var acc = new Account();
+                    // First - create three Accounts with same group
 
-                acc.create( {
-                    name:            'severalFull' + n,
-                    password:        '123',
-                    group:           theNewAccountGroup,
-                    individualPerms: {
-                        hall: {
-                            create: true
-                        }
-                    }
-                }, function ( err ) {
+                    var acc = new Account();
 
-                    should.not.exist( err );
-                    tcb();
-
-                } );
-
-
-            }, function () {
-
-                // Second - find them
-
-                testTemplates.find.shouldFind(
-                    'find',
-                    [ { group: theNewAccountGroup } ],
-                    3,
-                    done
-                );
-
-            } );
-
-        } );
-
-        it( 'should find full by token' );
-
-        it( 'should not find nonexistent', function ( done ) {
-
-            testTemplates.find.shouldReturn404(
-                'find',
-                [ { id: '000000000000000000000000' } ],
-                done
-            );
-
-        } );
-
-        it( 'should return 404 when find by password or individualPerms', function ( done ) {
-
-            testTemplates.find.shouldReturn404(
-                'find',
-                [
-                    { password: '123' },
-                    {
+                    acc.create( {
+                        name:            'severalFull' + n,
+                        password:        '123',
+                        group:           theNewAccountGroup,
                         individualPerms: {
                             hall: {
                                 create: true
                             }
                         }
-                    }
-                ],
+                    }, function ( err ) {
+
+                        should.not.exist( err );
+                        tcb();
+
+                    } );
+
+
+                }, function () {
+
+                    // Second - find them
+
+                    testTemplates.find.shouldFind(
+                        'findAccounts',
+                        [ { group: theNewAccountGroup } ],
+                        3,
+                        done
+                    );
+
+                } );
+
+            } );
+        } );
+
+        //it( 'should find full by token' );
+
+        it( 'should not find nonexistent', function ( done ) {
+
+            testTemplates.find.shouldReturn404(
+                'findAccounts',
+                [ { id: '000000000000000000000000' } ],
                 done
             );
 
@@ -1917,7 +1924,7 @@ describe( 'Account module testing', function () {
 
     } );
 
-    xdescribe( '.findShort', function () {
+    describe( 'Array.findShortAccounts', function () {
 
         // reCreate
         beforeEach( function ( done ) {
@@ -1930,39 +1937,43 @@ describe( 'Account module testing', function () {
 
         it( 'should find all Accounts by passing empty filter', function ( done ) {
 
-            async.times( 3, function ( tcb ) {
+            cleanUp.Accounts( function () {
 
-                // First - create three Accounts with same group
+                async.times( 3, function ( n, tcb ) {
 
-                var acc = new Account();
+                    // First - create three Accounts with same group
 
-                acc.create( {
-                    name:            'severalFull' + n,
-                    password:        '123',
-                    group:           theNewAccountGroup,
-                    individualPerms: {
-                        hall: {
-                            create: true
+                    var acc = new Account();
+
+                    acc.create( {
+                        name:            'severalFull' + n,
+                        password:        '123',
+                        group:           theNewAccountGroup,
+                        individualPerms: {
+                            hall: {
+                                create: true
+                            }
                         }
-                    }
-                }, function ( err ) {
+                    }, function ( err ) {
 
-                    should.not.exist( err );
-                    tcb();
+                        should.not.exist( err );
+                        tcb();
+
+                    } );
+
+
+                }, function () {
+
+                    // Second - find them
+
+                    testTemplates.find.shouldFind(
+                        'findShortAccounts',
+                        [ {} ],
+                        3,
+                        done
+                    );
 
                 } );
-
-
-            }, function () {
-
-                // Second - find them
-
-                testTemplates.find.shouldFind(
-                    'findShort',
-                    [ {} ],
-                    3,
-                    done
-                );
 
             } );
 
@@ -1970,7 +1981,7 @@ describe( 'Account module testing', function () {
 
         it( 'should find full one by id, name', function ( done ) {
 
-            testTemplates.find.shouldFind( 'findShort',
+            testTemplates.find.shouldFind( 'findShortAccounts',
                 [
                     { id: theNewAccountArguments.id },
                     { name: theNewAccountArguments.name }
@@ -1980,70 +1991,56 @@ describe( 'Account module testing', function () {
 
         it( 'should find full !several! by group', function ( done ) {
 
-            async.times( 3, function ( tcb ) {
+            cleanUp.Accounts( function () {
 
-                // First - create three Accounts with same group
+                async.times( 3, function ( n, tcb ) {
 
-                var acc = new Account();
+                    // First - create three Accounts with same group
 
-                acc.create( {
-                    name:            'severalFull' + n,
-                    password:        '123',
-                    group:           theNewAccountGroup,
-                    individualPerms: {
-                        hall: {
-                            create: true
-                        }
-                    }
-                }, function ( err ) {
+                    var acc = new Account();
 
-                    should.not.exist( err );
-                    tcb();
-
-                } );
-
-
-            }, function () {
-
-                // Second - find them
-
-                testTemplates.find.shouldFind(
-                    'findShort',
-                    [ { group: theNewAccountGroup } ],
-                    3,
-                    done
-                );
-
-            } );
-
-        } );
-
-        it( 'should find short by token' );
-
-        it( 'should not find nonexistent', function ( done ) {
-
-            testTemplates.find.shouldReturn404(
-                'findShort',
-                [ { id: '000000000000000000000000' } ],
-                done
-            );
-
-        } );
-
-        it( 'should return 404 when find by password or individualPerms', function ( done ) {
-
-            testTemplates.find.shouldReturn404(
-                'findShort',
-                [
-                    { password: '123' },
-                    {
+                    acc.create( {
+                        name:            'severalFull' + n,
+                        password:        '123',
+                        group:           theNewAccountGroup,
                         individualPerms: {
                             hall: {
                                 create: true
                             }
                         }
-                    }
-                ],
+                    }, function ( err ) {
+
+                        should.not.exist( err );
+                        tcb();
+
+                    } );
+
+
+                }, function () {
+
+                    // Second - find them
+
+                    testTemplates.find.shouldFind(
+                        'findShortAccounts',
+                        [ { group: theNewAccountGroup } ],
+                        3,
+                        done
+                    );
+
+                } );
+
+            } );
+
+
+        } );
+
+        //it( 'should find short by token' );
+
+        it( 'should not find nonexistent', function ( done ) {
+
+            testTemplates.find.shouldReturn404(
+                'findShortAccounts',
+                [ { id: '000000000000000000000000' } ],
                 done
             );
 
@@ -2052,7 +2049,7 @@ describe( 'Account module testing', function () {
     } );
 
 
-    xdescribe( '.update', function () {
+    describe( '.update', function () {
 
         // Recreate Accounts and AccountGroups
         beforeEach( function ( done ) {
@@ -2071,13 +2068,16 @@ describe( 'Account module testing', function () {
 
                 // name
                 function ( scb ) {
+
+                    var oldId = theNewAccount.id;
+
                     theNewAccount.name = 'noWailorman';
-                    theNewAccount.update( function ( err, doc ) {
+                    theNewAccount.update( function ( err ) {
                         should.not.exist( err );
 
-                        doc.name.should.eql( 'noWailorman' );
+                        theNewAccount.id.should.eql( oldId );
+                        theNewAccount.name.should.eql( 'noWailorman' );
 
-                        //theNewAccount = doc;
                         scb();
                     } );
                 },
@@ -2088,7 +2088,14 @@ describe( 'Account module testing', function () {
                     var newGroupForUpdate = new AccountGroup();
 
                     newGroupForUpdate.create(
-                        { name: 'groupForUpdate' },
+                        {
+                            name:  'groupForUpdate',
+                            perms: {
+                                lessons: {
+                                    delete: true
+                                }
+                            }
+                        },
                         function ( err ) {
                             should.not.exist( err );
 
@@ -2098,9 +2105,16 @@ describe( 'Account module testing', function () {
                                 should.not.exist( err );
 
                                 //theNewAccount.id.should.eql(newGroupForUpdate.id);
-                                theNewAccount.deleted.should.eql( newGroupForUpdate.deleted );
+                                //theNewAccount.deleted.should.eql( false );
                                 theNewAccount.group.name.should.eql( newGroupForUpdate.name );
-                                theNewAccount.perms.should.eql( newGroupForUpdate.perms );
+                                theNewAccount.perms.should.eql( {
+                                    hall:    {
+                                        create: true
+                                    },
+                                    lessons: {
+                                        delete: true
+                                    }
+                                } );
 
                                 scb();
                             } );
@@ -2109,31 +2123,14 @@ describe( 'Account module testing', function () {
                     );
                 },
 
-                // password
-                function ( scb ) {
-
-                    theNewAccount.password = 'no123';
-                    theNewAccount.update( function ( err, doc ) {
-                        should.not.exist( err );
-
-                        passwordHash.verify( 'no123', doc.password );
-
-                        theNewAccount = doc;
-                        scb();
-                    } );
-
-                },
-
                 // individualPerms
                 function () {
 
                     theNewAccount.individualPerms = { someIndPerms: true };
-                    theNewAccount.update( function ( err, newAccountObject ) {
+                    theNewAccount.update( function ( err ) {
                         should.not.exist( err );
 
-                        newAccountObject.individualPerms.should.eql( { someIndPerms: true } );
-
-                        theNewAccount = newAccountObject;
+                        theNewAccount.individualPerms.should.eql( { someIndPerms: true } );
 
                         done();
                     } );
@@ -2272,45 +2269,11 @@ describe( 'Account module testing', function () {
     } );
 
 
-    xdescribe( '.remove', function () {
+    describe( '.remove', function () {
 
         beforeEach( function ( done ) {
 
-            async.series( [
-
-                // Remove all old Accounts
-                function ( seriesCallback ) {
-                    AccountModel.find().remove().exec( function ( err ) {
-                        should.not.exist( err );
-                        seriesCallback();
-                    } );
-                },
-
-                // Create a new Account for tests
-                function () {
-
-                    theNewAccount = new Account();
-
-                    theNewAccount.create( {
-                            name:            'wailormanRemove',
-                            password:        '123',
-                            group:           theNewAccountGroup,
-                            individualPerms: {
-                                coaches: {
-                                    create: true
-                                }
-                            }
-                        },
-                        function ( err, createdAccount ) {
-                            should.not.exist( err );
-
-                            theNewAccount = createdAccount;
-
-                            done();
-                        } );
-
-                }
-            ] );
+            reCreate.full( done );
 
         } );
 
@@ -2339,8 +2302,26 @@ describe( 'Account module testing', function () {
 
         } );
 
-        // -
-        xit( 'should mark removed Account {deleted: true}' );
+        it( 'should mark removed Account {deleted: true}', function ( done ) {
+
+            var oldId = theNewAccount.id;
+
+            theNewAccount.remove( function ( err ) {
+
+                if ( err ) console.log( JSON.stringify( err ) );
+                should.not.exist( err );
+
+                AccountModel.findOne( { _id: new mf.ObjectId( oldId ) }, function ( err, doc ) {
+
+                    should.exist( doc );
+                    doc.deleted.should.eql( true );
+                    done();
+
+                } );
+
+            } );
+
+        } );
 
         it( 'should not remove already removed Account', function ( done ) {
 
@@ -2365,8 +2346,28 @@ describe( 'Account module testing', function () {
 
         } );
 
-        // -
-        xit( 'should terminate all sessions of the Account' );
+        it( 'should clean object after removing', function ( done ) {
+
+            theNewAccount.remove( function ( err ) {
+
+                if ( err ) console.log( JSON.stringify( err ) );
+                should.not.exist( err );
+
+                should.not.exist( theNewAccount.id );
+                should.not.exist( theNewAccount.name );
+                should.not.exist( theNewAccount.group );
+                should.not.exist( theNewAccount.perms );
+                should.not.exist( theNewAccount.individualPerms );
+                should.not.exist( theNewAccount.password );
+                should.not.exist( theNewAccount.token );
+
+                done();
+
+            } );
+
+        } );
+
+        //it( 'should terminate all sessions of the Account' );
 
     } );
 
