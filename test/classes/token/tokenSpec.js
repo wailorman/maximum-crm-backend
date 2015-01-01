@@ -19,7 +19,7 @@ var theNewToken, theNewTokens, theNewAccount, theNewAccountGroup, theNewAccountA
 
 
 var isTokenValid = function ( token ) {
-    token.should.have.properties( [ 'id', 'account', 'ttl', 'created' ] );
+    token.should.have.properties( [ 'token', 'account', 'ttl', 'created' ] );
     token.account.isFull().should.eql( true );
 };
 
@@ -419,9 +419,9 @@ describe( 'Token class', function () {
 
                                 setTimeout( function () {
 
-                                    var tokenToFind = theNewToken.id;
+                                    var tokenToFind = theNewToken.token;
 
-                                    theNewToken.findOne( { id: tokenToFind }, function ( err ) {
+                                    theNewToken.findOne( { token: tokenToFind }, function ( err ) {
 
                                         should.exist( err );
                                         err.should.be.instanceof( restify.ResourceNotFoundError );
@@ -471,9 +471,9 @@ describe( 'Token class', function () {
 
                                 setTimeout( function () {
 
-                                    var tokenToFind = theNewToken.id;
+                                    var tokenToFind = theNewToken.token;
 
-                                    theNewToken.findOne( { id: tokenToFind }, function ( err ) {
+                                    theNewToken.findOne( { token: tokenToFind }, function ( err ) {
 
                                         should.not.exist( err );
 
@@ -514,10 +514,10 @@ describe( 'Token class', function () {
 
             foundToken = new Token();
 
-            foundToken.findOne( { id: theNewToken.id }, function ( err ) {
+            foundToken.findOne( { token: theNewToken.token }, function ( err ) {
 
                 should.not.exist( err );
-                foundToken.id.should.eql( theNewToken.id ); // is this Token I find?
+                foundToken.token.should.eql( theNewToken.token ); // is this Token I find?
                 foundToken.isTokenValid();
                 done();
 
@@ -586,7 +586,7 @@ describe( 'Token class', function () {
 
 
                         removedToken = new Token();
-                        removedToken.findOne( { id: theNewToken.id }, function ( err ) {
+                        removedToken.findOne( { token: theNewToken.token }, function ( err ) {
 
                             should.not.exist( err );
                             scb();

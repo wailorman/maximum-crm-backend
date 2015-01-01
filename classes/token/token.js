@@ -4,15 +4,16 @@ var restify      = require( 'restify' ),
     passwordHash = require( 'password-hash' ),
     async        = require( 'async' ),
     sugar        = require( 'sugar' ),
+    randToken    = require( 'rand-token' ),
 
     mf           = require( '../../libs/mini-funcs.js' ),
 
-    TokenModel   = require( './token-model.js' ).TokenModel;
+    TokenModel   = require( './token-model.js' ).TokenModel,
 
-Account = require( '../account/account.js' ),
+    Account      = require( '../account/account.js' ),
 
 
-    defaultTtl = 72; // in hours
+    defaultTtl   = 72; // in hours
 
 
 var Token = function () {
@@ -22,19 +23,19 @@ var Token = function () {
     this.validators = {
 
         /**
-         * Id validator
+         * Token validator
          *
          * @param {string} value
          * @param {function} next
          *
-         * @throws InvalidArgumentError( 'id|invalid' )
+         * @throws InvalidArgumentError( 'token|invalid' )
          */
-        id: function ( value, next ) {
+        token: function ( value, next ) {
 
-            if ( mf.isObjectId( value ) )
+            if ( mf.isToken( value ) )
                 next();
             else
-                return next( new restify.InvalidArgumentError( 'id|invalid' ) );
+                return next( new restify.InvalidArgumentError( 'token|invalid' ) );
 
         },
 
@@ -125,7 +126,7 @@ var Token = function () {
                 // . Convert simple fields
                 function ( scb ) {
 
-                    self.id = document._id.toString();
+                    self.token = document.token;
                     self.created = document.created;
                     self.ttl = document.ttl;
                     scb();
@@ -202,6 +203,7 @@ var Token = function () {
 
                     var newTokenDocument = new TokenModel( {
 
+                        token:   randToken.generate( 24 ),
                         account: new mf.ObjectId( data.account.id ),
                         created: new Date( curTimeMS ),
                         ttl:     data.ttl ?
@@ -243,7 +245,7 @@ var Token = function () {
      * Find Token
      *
      * @param {object}      filter
-     * @param {string}      filter.id
+     * @param {string}      filter.token
      * @param {function}    next
      */
     this.findOne = function ( filter, next ) {
@@ -258,7 +260,7 @@ var Token = function () {
                 // . Validate filter
                 function ( scb ) {
 
-                    self.validators.id( filter.id, scb );
+                    self.validators.token( filter.token, scb );
 
                 },
 
@@ -325,7 +327,7 @@ var Token = function () {
                 // . Validate id
                 function ( scb ) {
 
-                    self.validators.id( self.id, scb );
+                    self.validators.token( self.token, scb );
 
                 },
 
@@ -333,7 +335,7 @@ var Token = function () {
                 function ( scb ) {
 
                     var checkExistToken = new Token();
-                    checkExistToken.findOne( { id: self.id }, function ( err ) {
+                    checkExistToken.findOne( { token: self.token }, function ( err ) {
 
                         if ( err && err instanceof restify.ResourceNotFoundError )
                             return scb( new restify.InternalError( '404' ) );
@@ -350,7 +352,7 @@ var Token = function () {
                 function ( scb ) {
 
                     TokenModel.findOneAndRemove(
-                        { _id: new mf.ObjectId( self.id ) },
+                        { token: self.token },
                         function ( err ) {
 
                             if ( err ) return scb( new restify.InternalError( 'mongo: ' + err.message ) );
@@ -385,7 +387,7 @@ var Token = function () {
 
     this.clean = function () {
 
-        delete self.id;
+        delete self.token;
         delete self.account;
         delete self.ttl;
         delete self.created;

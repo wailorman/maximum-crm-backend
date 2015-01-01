@@ -1,6 +1,6 @@
 var restify      = require( 'restify' ),
     mongoose     = require( 'mongoose' ),
-    Document     = require( '../../node_modules/mongoose/lib/document.js' ),
+    //Document     = require( '../../node_modules/mongoose/lib/document.js' ),
     passwordHash = require( 'password-hash' ),
     async        = require( 'async' ),
     sugar        = require( 'sugar' ),
@@ -109,9 +109,9 @@ var Account = function ( data ) {
                 // . Check name engaged
                 function ( scb ) {
 
-                    var chechEngageAccount = new Account();
+                    var checkEngageAccount = new Account();
 
-                    chechEngageAccount.findOne( { name: data.name }, function ( err ) {
+                    checkEngageAccount.findOne( { name: data.name }, function ( err ) {
 
                         if ( err && err instanceof restify.ResourceNotFoundError ) // not found
                             return scb();

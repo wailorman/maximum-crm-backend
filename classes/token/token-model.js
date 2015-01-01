@@ -3,6 +3,10 @@ var mongoose = require( 'mongoose' ),
 
 var tokenSchema = new Schema({
 
+    token: {
+        type: String,
+        required: true
+    },
     account: {
         type: Schema.Types.ObjectId,
         required: true
