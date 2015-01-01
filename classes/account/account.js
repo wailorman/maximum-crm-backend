@@ -14,6 +14,7 @@ var restify      = require( 'restify' ),
  * Account class
  *
  * @param {object=}         data                    Passing if you want to create a new Account. New Account data
+ * @param {string}          data.id
  * @param {string}          data.name               Name
  * @param {string}          data.password           Password
  * @param {AccountGroup}    data.group              Group in which the new Member will consist
@@ -709,12 +710,11 @@ var Account = function ( data ) {
     /**
      * Find one short Account object
      *
-     * @param {object}      filter
+     * @param {object}                  filter
      *
-     * @param {string=}     filter.id
-     * @param {string=}     filter.name
-     * @param {string=}     filter.group    AccountGroup string id
-     * @param {string=}     filter.token    string token
+     * @param {string}                  [filter.id]
+     * @param {string}                  [filter.name]
+     * @param {AccountGroup|string}     [filter.group]
      *
      * @param next
      */
@@ -1418,6 +1418,58 @@ var Account = function ( data ) {
      * @param {function}    next        Callback(err, doc). doc - Found Account
      */
     this.remove = function ( next ) {
+
+        async.series(
+            [
+
+                // . Validate id
+                function ( scb ) {
+
+                    self.validators.id( self.id, function ( err ) {
+
+                        if ( err ) return scb( new restify.InternalError( 'id is not valid: ' + err.message ) );
+
+                        scb();
+
+                    } );
+
+                },
+
+                // . Mark document as deleted in DB
+                function ( scb ) {
+
+                    AccountModel.update(
+                        { _id: new mf.ObjectId( self.id ) },
+                        { $set: { deleted: true } },
+                        { multi: false },
+                        function ( err ) {
+
+                            if ( err ) return scb( new restify.InternalError( 'Mark document error. Mongoose: ' + err.message ) );
+                            scb();
+
+                        }
+                    );
+
+                },
+
+                // . Clean object
+                function ( scb ) {
+
+                    self.clean();
+
+                    scb();
+
+                }
+
+            ],
+            function ( err ) {
+
+                if ( err ) return next( err );
+                next();
+
+            }
+        );
+
     };
 
     /**

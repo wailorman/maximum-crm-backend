@@ -2376,52 +2376,24 @@ describe( 'Account module testing', function () {
 
         beforeEach( function ( done ) {
 
-            async.series( [
-
-                // Remove all old Accounts
-                function ( seriesCallback ) {
-                    AccountModel.find().remove().exec( function ( err ) {
-                        should.not.exist( err );
-                        seriesCallback();
-                    } );
-                },
-
-                // Create a new Account for tests
-                function () {
-
-                    theNewAccount = new Account();
-
-                    theNewAccount.create( {
-                            name:            'wailormanAuth',
-                            password:        '123',
-                            group:           theNewAccountGroup,
-                            individualPerms: {
-                                coaches: {
-                                    create: true
-                                }
-                            }
-                        },
-                        function ( err, createdAccount ) {
-                            should.not.exist( err );
-
-                            theNewAccount = createdAccount;
-
-                            done();
-                        } );
-
-                }
-            ] );
+            reCreate.full( done );
 
         } );
 
         it( 'should authenticate Account', function ( done ) {
 
-            theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
+            theNewAccount.auth( theNewAccount.name, theNewAccountArguments.password, function ( err ) {
                 should.not.exist( err );
 
-                doc.token[ 0 ].should.be.type( 'string' );
+                theNewAccount.token.should.be.type( 'string' );
 
-                done();
+                theNewAccount.validators.token( theNewAccount.token, function ( err ) {
+
+                    should.not.exist( err );
+                    done();
+
+                } );
+
             } );
 
         } );
@@ -2429,19 +2401,18 @@ describe( 'Account module testing', function () {
         it( 'should authenticate Account again', function ( done ) {
 
             // First auth
-            theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
+            theNewAccount.auth( theNewAccount.name, theNewAccountArguments.password, function ( err ) {
                 should.not.exist( err );
 
-                doc.token.should.be.type( 'string' );
-                var firstToken = doc.token[ 0 ];
+                theNewAccount.token.should.be.type( 'string' );
+                var firstToken = theNewAccount.token;
 
                 // Second auth
-                theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
+                theNewAccount.auth( theNewAccount.name, theNewAccountArguments.password, function ( err ) {
                     should.not.exist( err );
 
-                    doc.token[ 1 ].should.be.type( 'string' );
-                    doc.token[ 0 ].should.eql( firstToken );
-                    doc.token[ 1 ].should.not.eql( firstToken );
+                    theNewAccount.token.should.be.type( 'string' );
+                    theNewAccount.token.should.not.eql( firstToken );
 
                     done();
                 } );
@@ -2449,13 +2420,13 @@ describe( 'Account module testing', function () {
 
         } );
 
-        it( 'should check Account have two tokens after twice authorization', function ( done ) {
+        it( 'should check Account have two Tokens after twice authorization', function ( done ) {
 
             // First auth
             theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
                 should.not.exist( err );
 
-                doc.token[ 0 ].should.be.type( 'string' );
+                doc.token.should.be.type( 'string' );
                 var firstToken = doc.token[ 0 ];
 
                 // Second auth
@@ -2691,5 +2662,6 @@ describe( 'Account module testing', function () {
         } );
 
     } );
+
 
 } );
