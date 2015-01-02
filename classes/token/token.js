@@ -1,7 +1,5 @@
 var restify      = require( 'restify' ),
     mongoose     = require( 'mongoose' ),
-    Document     = require( '../../node_modules/mongoose/lib/document.js' ),
-    passwordHash = require( 'password-hash' ),
     async        = require( 'async' ),
     sugar        = require( 'sugar' ),
     randToken    = require( 'rand-token' ),
@@ -13,7 +11,7 @@ var restify      = require( 'restify' ),
     Account      = require( '../account/account.js' ),
 
 
-    defaultTtl   = 72; // in hours
+    defaultTTL   = 72; // in hours
 
 
 var Token = function () {
@@ -149,7 +147,7 @@ var Token = function () {
      *
      * @param {object}      data
      * @param {Account}     data.account
-     * @param {number}      data.ttl
+     * @param {number}      [data.ttl]
      * @param {function}    next
      */
     this.create = function ( data, next ) {
@@ -208,7 +206,7 @@ var Token = function () {
                         created: new Date( curTimeMS ),
                         ttl:     data.ttl ?
                             new Date( curTimeMS + ( data.ttl * 1000 ) ) :
-                            new Date( curTimeMS + ( defaultTtl * 3600 * 1000 ) )
+                            new Date( curTimeMS + ( defaultTTL * 3600 * 1000 ) )
 
                     } );
 
@@ -247,6 +245,10 @@ var Token = function () {
      * @param {object}      filter
      * @param {string}      filter.token
      * @param {function}    next
+     *
+     * @throws InvalidArgumentError( 'filter|null' )
+     * @throws InternalError( 'mongo: ...' )
+     * @throws ResourceNotFoundError( '404' )
      */
     this.findOne = function ( filter, next ) {
 
@@ -267,7 +269,7 @@ var Token = function () {
                 // . Prepare query
                 function ( scb ) {
 
-                    preparedQuery = { ttl: { $gte: new Date() } };
+                    preparedQuery = { ttl: { $gte: new Date() }, token: filter.token };
                     scb();
 
                 },
