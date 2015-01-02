@@ -196,6 +196,8 @@ module.exports.mergePerms = mergePerms;
  */
 module.exports.validatePerms = function ( perms ) {
 
+
+
     function checkObjectLevel( obj ) {
         for ( var i in obj ) {
 

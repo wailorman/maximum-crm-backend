@@ -748,46 +748,6 @@ describe( 'Account module testing', function () {
 
             } );
 
-            describe( 'token', function () {
-
-                it( 'should validate', function ( done ) {
-
-                    async.each(
-                        [
-                            'awDdqOeBF9DmEbRNi4EcNofL',
-                            '548dfad210b13dc0226ef8c1'
-                        ],
-                        theNewAccount.validators.token,
-                        function ( err ) {
-                            should.not.exist( err );
-                            done();
-                        }
-                    );
-
-                } );
-
-                it( 'should not validate', function ( done ) {
-
-                    async.each(
-                        [
-                            'a',
-                            null,
-                            true,
-                            false,
-                            {},
-                            []
-                        ],
-                        theNewAccount.validators.token,
-                        function ( err ) {
-                            should.exist( err );
-                            done();
-                        }
-                    );
-
-                } );
-
-            } );
-
             describe( 'group', function () {
 
                 it( 'should validate', function ( done ) {
@@ -857,7 +817,6 @@ describe( 'Account module testing', function () {
                     [
                         { id: '548dfad210b13dc0226ef8c1' },
                         { name: 'wailorman' },
-                        { token: 'awDdqOeBF9DmEbRNi4EcNofL' },
                         { group: theNewAccountGroup }
                     ],
                     theNewAccount.validateParameters,
@@ -2144,7 +2103,7 @@ describe( 'Account module testing', function () {
             var invalidNewData = {
                 name:            [ '', '   ', true, false, null, {} ],
                 password:        [ '', '  ', true, false, null, {} ],
-                group:           [ '', '   ', true, {}, theNewAccount ],
+                group:           [ '   ', true, {}, theNewAccount ],
                 individualPerms: [ true, theNewAccount ]
             };
 
@@ -2266,6 +2225,46 @@ describe( 'Account module testing', function () {
 
         } );
 
+        it( 'should remove group prop', function ( done ) {
+
+            theNewAccount.group = null;
+            theNewAccount.update( function ( err ) {
+
+                should.not.exist( err );
+                should.not.exist( theNewAccount.group );
+
+                done();
+
+            } );
+
+        } );
+
+        it( 'should remove individualPerms prop', function ( done ) {
+
+            theNewAccount.individualPerms = null;
+
+            theNewAccount.update( function ( err ) {
+
+                should.not.exist( err );
+                should.not.exist( theNewAccount.individualPerms );
+
+                done();
+
+            } );
+
+        } );
+
+        it( 'should not call error if we didnt write any changes', function ( done ) {
+
+            theNewAccount.update( function ( err ) {
+
+                should.not.exist( err );
+                done();
+
+            } );
+
+        } );
+
     } );
 
 
@@ -2371,297 +2370,6 @@ describe( 'Account module testing', function () {
 
     } );
 
-
-    xdescribe( '.auth', function () {
-
-        beforeEach( function ( done ) {
-
-            reCreate.full( done );
-
-        } );
-
-        it( 'should authenticate Account', function ( done ) {
-
-            theNewAccount.auth( theNewAccount.name, theNewAccountArguments.password, function ( err ) {
-                should.not.exist( err );
-
-                theNewAccount.token.should.be.type( 'string' );
-
-                theNewAccount.validators.token( theNewAccount.token, function ( err ) {
-
-                    should.not.exist( err );
-                    done();
-
-                } );
-
-            } );
-
-        } );
-
-        it( 'should authenticate Account again', function ( done ) {
-
-            // First auth
-            theNewAccount.auth( theNewAccount.name, theNewAccountArguments.password, function ( err ) {
-                should.not.exist( err );
-
-                theNewAccount.token.should.be.type( 'string' );
-                var firstToken = theNewAccount.token;
-
-                // Second auth
-                theNewAccount.auth( theNewAccount.name, theNewAccountArguments.password, function ( err ) {
-                    should.not.exist( err );
-
-                    theNewAccount.token.should.be.type( 'string' );
-                    theNewAccount.token.should.not.eql( firstToken );
-
-                    done();
-                } );
-            } );
-
-        } );
-
-        it( 'should check Account have two Tokens after twice authorization', function ( done ) {
-
-            // First auth
-            theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
-                should.not.exist( err );
-
-                doc.token.should.be.type( 'string' );
-                var firstToken = doc.token[ 0 ];
-
-                // Second auth
-                theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
-                    should.not.exist( err );
-
-                    doc.token[ 1 ].should.be.type( 'string' );
-                    doc.token[ 0 ].should.eql( firstToken );
-                    doc.token[ 1 ].should.not.eql( firstToken );
-
-
-                    var secondToken = doc.token[ 1 ];
-
-
-                    var account1 = new Account();
-                    var account2 = new Account();
-
-                    account1.getByToken( firstToken, function ( err, doc ) {
-                        should.not.exist( err );
-                        doc.id.should.eql( theNewAccount.id );
-
-                        account2.getByToken( secondToken, function ( err, doc ) {
-                            should.not.exist( err );
-                            doc.id.should.eql( theNewAccount.id );
-
-                            done();
-                        } );
-
-                    } );
-                } );
-            } );
-
-        } );
-
-        it( 'should not authenticate user with incorrect pass', function ( done ) {
-
-            theNewAccount.auth( theNewAccount.name, '12345678987654', function ( err ) {
-                should.exist( err );
-                done();
-            } );
-
-        } );
-
-        it( 'should not authenticate with incorrect params', function ( done ) {
-
-            async.each(
-                [
-                    {
-                        name:     theNewAccount.name,
-                        password: null
-                    },
-                    {
-                        name:     theNewAccount.name,
-                        password: ''
-                    },
-                    {
-                        name:     true,
-                        password: true
-                    },
-                    {
-                        name:     null,
-                        password: null
-                    }
-                ],
-                function ( authData, escb ) {
-                    theNewAccount.auth( authData.name, authData.password, function ( err ) {
-                        should.exist( err );
-                        escb();
-                    } );
-                },
-                function ( err ) {
-                    should.not.exist( err );
-                    done();
-                }
-            );
-
-        } );
-
-    } );
-
-
-    xdescribe( '.logout', function () {
-
-        beforeEach( function ( done ) {
-
-            async.series( [
-
-                // Remove all old Accounts
-                function ( seriesCallback ) {
-                    AccountModel.find().remove().exec( function ( err ) {
-                        should.not.exist( err );
-                        seriesCallback();
-                    } );
-                },
-
-                // Create a new Account for tests
-                function () {
-
-                    theNewAccount = new Account();
-
-                    theNewAccount.create( {
-                        name:            'wailormanLogout',
-                        password:        '123',
-                        group:           theNewAccountGroup,
-                        individualPerms: {
-                            coaches: {
-                                create: true
-                            }
-                        }
-                    }, function ( err, createdAccount ) {
-                        should.not.exist( err );
-
-                        theNewAccount = createdAccount;
-
-                        done();
-                    } );
-
-                }
-            ] );
-
-        } );
-
-        it( 'should terminate all sessions of the Account', function ( done ) {
-
-            theNewAccount.auth( theNewAccount.name, '123', function ( err ) {
-                should.not.exist( err );
-
-                theNewAccount.auth( theNewAccount.name, '123', function ( err ) {
-                    should.not.exist( err );
-
-                    theNewAccount.logoutAll( function ( err, doc ) {
-                        should.not.exist( err );
-
-                        doc.id.should.eql( theNewAccount.id );
-
-                        doc.token.length.should.eql( 0 );
-
-                        done();
-
-                        // TODO Write DB checking
-                    } );
-                } );
-
-            } );
-
-        } );
-
-        it( 'should terminate only one session of the Account', function ( done ) {
-
-            theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
-                should.not.exist( err );
-                var firstToken = doc.token[ 0 ];
-
-                theNewAccount.auth( theNewAccount.name, '123', function ( err ) {
-                    should.not.exist( err );
-                    var secondToken = doc.token[ 1 ];
-
-                    theNewAccount.logout( firstToken, function ( err, doc ) {
-                        should.not.exist( err );
-
-                        doc.id.should.eql( theNewAccount.id );
-
-                        doc.token.length.should.eql( 1 );
-
-                        doc.token[ 0 ].should.eql( secondToken );
-
-                        done();
-
-                        // TODO Write DB checking
-                    } );
-                } );
-
-            } );
-
-        } );
-
-        it( 'should not call method with incorrect params', function ( done ) {
-
-            async.each(
-                [
-                    '', '123', true, false, null, {}
-                ],
-                function ( token, ecb ) {
-                    theNewAccount.logout( token, function ( err ) {
-                        should.exist( err );
-                        ecb();
-                    } );
-                },
-                function ( err ) {
-                    should.not.exist( err );
-                    done();
-                }
-            );
-
-        } );
-
-        it( 'should not call error when we calling .logoutAll without any active sessions', function ( done ) {
-
-            theNewAccount.logoutAll( function ( err ) {
-                should.not.exist( err );
-                done();
-            } );
-
-        } );
-
-        it( 'should call error when terminating nonexistent session', function ( done ) {
-
-            theNewAccount.logout( '000000000000000000000000', function ( err ) {
-                should.exist( err );
-                done();
-            } );
-
-        } );
-
-        it( 'should not terminate sessions of nonexistent Account', function ( done ) {
-
-            theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
-                should.not.exist( err );
-
-                var token = doc.token[ 0 ];
-                doc.remove( function ( err ) {
-                    should.not.exist( err );
-
-                    theNewAccount.getByToken( token, function ( err ) {
-                        should.exist( err );
-                        done();
-                    } );
-
-                } );
-
-            } );
-
-        } );
-
-    } );
 
 
 } );

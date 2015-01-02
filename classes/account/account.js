@@ -35,18 +35,18 @@ var Account = function ( data ) {
     /**
      * Create an Account
      *
-     * @param {object}              data                    Arguments
+     * @param                       data                    Arguments
      * @param {string}              data.name
      * @param {string}              data.password
-     * @param {AccountGroup}        data.group
-     * @param                       data.individualPerms
+     * @param {AccountGroup}        [data.group]
+     * @param                       [data.individualPerms]
      *
      *
      * @param {function}    next
      *
      * @throws InvalidArgumentError( 'parameter|error string' )
      *
-     * @throws InternalError( 'document coverting: ...')
+     * @throws InternalError( 'document converting: ...')
      * @throws InternalError( 'mongoose: ...')
      */
     this.create = function ( data, next ) {
@@ -228,29 +228,6 @@ var Account = function ( data ) {
                 }
             } else
                 return next( new restify.InvalidArgumentError( 'name|null' ) );
-
-        },
-
-        /**
-         * Token validator
-         *
-         * @param {string} value
-         * @param {function} next
-         *
-         * @throws InvalidArgumentError( 'token|not token' )
-         *
-         * @returns {*}
-         */
-        token: function ( value, next ) {
-
-            if ( value ) {
-                if ( ! mf.isToken( value ) ) {
-                    return next( new restify.InvalidArgumentError( 'token|not token' ) );
-                } else {
-                    next( null );
-                }
-            } else
-                return next( new restify.InvalidArgumentError( 'token|null' ) );
 
         },
 
@@ -799,12 +776,11 @@ var Account = function ( data ) {
     /**
      * Find several full Accounts objects by filter
      *
-     * @param {object}      filter
+     * @param {object}                  filter
      *
-     * @param {string=}     filter.id
-     * @param {string=}     filter.name
-     * @param {string=}     filter.group    AccountGroup string id
-     * @param {string=}     filter.token    string token
+     * @param {string}                  [filter.id]
+     * @param {string}                  [filter.name]
+     * @param {string|AccountGroup}     [filter.group]    AccountGroup string id
      *
      * @param next
      */
@@ -914,12 +890,11 @@ var Account = function ( data ) {
     /**
      * Find several short Accounts objects by filter
      *
-     * @param {object}      filter
+     * @param {object}                  filter
      *
-     * @param {string=}     filter.id
-     * @param {string=}     filter.name
-     * @param {string=}     filter.group    AccountGroup string id
-     * @param {string=}     filter.token    string token
+     * @param {string}                  [filter.id]
+     * @param {string}                  [filter.name]
+     * @param {string|AccountGroup}     [filter.group]    AccountGroup string id
      *
      * @param next
      */
@@ -952,8 +927,6 @@ var Account = function ( data ) {
                     self.prepareFindQuery( filter, function ( err, preparedQuery ) {
 
                         if ( err ) return scb( err );
-
-                        //if ( ! preparedQuery ) return scb( new restify.ResourceNotFoundError( '404' ) );
 
                         query = preparedQuery;
 
@@ -1293,125 +1266,6 @@ var Account = function ( data ) {
 
     };
 
-
-    /**
-     * Get an Account by name string
-     * @param {string}      name    Name to find
-     *
-     * @param {function}    next    callback(err, doc)
-     */
-    this.getByName = function ( name, next ) {
-
-        if ( ! name )
-            return next( new restify.InvalidArgumentError( 'id|null' ) );
-
-        if ( typeof name != 'string' )
-            return next( new restify.InvalidArgumentError( 'id|not ObjectId' ) );
-
-
-        AccountModel.findOne(
-            { name: name, deleted: false },
-            function ( err, accountDocument ) {
-                if ( err ) return next( err );
-                if ( ! accountDocument ) return next( new restify.ResourceNotFoundError( '404' ) );
-
-                var theAccountGroup = new AccountGroup();
-
-                async.series(
-                    [
-                        // Get AccountGroup
-                        function ( scb ) {
-                            if ( accountDocument.group ) {
-
-                                theAccountGroup.getById(
-                                    accountDocument.group.toString(),
-                                    function ( err ) {
-                                        if ( err ) return scb( err );
-
-                                        scb();
-                                    }
-                                );
-
-                            } else {
-
-                                theAccountGroup = null;
-                                scb();
-
-                            }
-                        },
-
-                        // Write info into self object
-                        function ( scb ) {
-
-                            self.id = accountDocument._id.toString();
-                            self.name = accountDocument.name;
-                            self.group = theAccountGroup;
-                            self.individualPerms = accountDocument.individualPerms;
-                            self.password = null;
-
-                            self.perms = self.group ?
-                                mf.mergePerms( self.group.perms, self.individualPerms ) :
-                                self.individualPerms;
-
-                            scb();
-
-                        }
-                    ],
-
-                    function ( err ) {
-                        if ( err ) return next( err );
-                        next( null, self );
-                    }
-                );
-
-            }
-        );
-
-
-    };
-
-    /**
-     * Get an Account by token
-     *
-     * @param {string}       token       Token string
-     *
-     * @param {function}    next        callback(err, Account)
-     */
-    this.getByToken = function ( token, next ) {
-    };
-
-    /**
-     * Authenticate by username & password
-     *
-     * @param {string}      username    Username of the Account to auth
-     * @param {string}      password    Password of the Account to auth
-     *
-     * @param {function}    next        Callback(err, doc)
-     */
-    this.auth = function ( username, password, next ) {
-    };
-
-
-    /**
-     * Terminate user session
-     *
-     * @param {string}         token     Token to logout.
-     *
-     * @param {function}       next      Callback(err, Account)
-     */
-    this.logout = function ( token, next ) {
-
-    };
-
-
-    /**
-     * Terminate all user sessions
-     *
-     * @param {function}    next    callback(err, doc)
-     */
-    this.logoutAll = function ( next ) {
-    };
-
     /**
      * Remove Account
      *
@@ -1496,11 +1350,12 @@ var Account = function ( data ) {
      */
     this.update = function ( next ) {
 
-        var originalAccount, changes, size, addPasswordProperty, updatedAccountDocument;
+        var originalAccount, updSet, updUnset, size, addPasswordProperty, updatedAccountDocument;
 
         size = self.isFull() ? 'full' : 'short';
 
-        changes = {};
+        updSet = {};
+        updUnset = {};
 
         async.series(
             [
@@ -1532,110 +1387,113 @@ var Account = function ( data ) {
                             // name
                             function ( pcb ) {
 
-                                if ( self.name ) {
+                                // Name is required prop
+                                if ( ! self.name ) return pcb( new restify.InvalidArgumentError( 'name|null' ) );
 
-                                    if ( self.name !== originalAccount.name ) {
+                                // No changes
+                                if ( self.name === originalAccount.name ) return pcb();
 
 
-                                        async.series(
-                                            [
+                                async.series(
+                                    [
 
-                                                // validate
-                                                function ( nameScb ) {
+                                        // validate
+                                        function ( nameScb ) {
 
-                                                    self.validators.name( self.name, function ( err ) {
+                                            self.validators.name( self.name, function ( err ) {
 
-                                                        if ( err ) return nameScb( err );
-                                                        changes.name = self.name;
-                                                        nameScb();
+                                                if ( err ) return nameScb( err );
 
-                                                    } );
+                                                nameScb();
 
-                                                },
+                                            } );
 
-                                                // check engage
-                                                function ( nameScb ) {
+                                        },
 
-                                                    var testNameEngageAccount = new Account();
+                                        // check engage
+                                        function ( nameScb ) {
 
-                                                    testNameEngageAccount.findOneShort( { name: self.name }, function ( err ) {
+                                            var testNameEngageAccount = new Account();
 
-                                                        if ( err && err instanceof restify.ResourceNotFoundError )
-                                                            return nameScb(); // not engaged
-                                                        else if ( err )
-                                                            return nameScb( new restify.InternalError( 'Name engage checking: ' + err.message ) );
-                                                        else
-                                                            return nameScb( new restify.InvalidArgumentError( 'name|engaged' ) );
+                                            testNameEngageAccount.findOneShort( { name: self.name }, function ( err ) {
 
-                                                    } );
+                                                if ( err && err instanceof restify.ResourceNotFoundError )
+                                                    return nameScb(); // not engaged
 
-                                                },
-                                            ],
-                                            function ( err ) {
-                                                if ( err ) return pcb( err );
-                                                pcb();
-                                            }
-                                        );
+                                                else if ( err )
+                                                    return nameScb( new restify.InternalError( 'Name engage checking: ' + err.message ) );
 
-                                    } else
+                                                else
+                                                    return nameScb( new restify.InvalidArgumentError( 'name|engaged' ) );
+
+                                            } );
+
+                                        }
+                                    ],
+                                    function ( err ) {
+                                        if ( err ) return pcb( err );
+
+                                        updSet.name = self.name;
+
                                         pcb();
+                                    }
+                                );
 
-                                } else
-                                    return pcb( new restify.InvalidArgumentError( 'name|null' ) );
 
                             },
 
                             // group
                             function ( pcb ) {
 
-                                if ( self.group ) {
+                                // No changes
+                                if ( ! self.group && ! originalAccount.group ) return pcb();
 
-                                    if ( self.group !== originalAccount.group ) {
-
-                                        self.validators.group( self.group, function ( err ) {
-
-                                            if ( err ) return pcb( err ); // group|...
-
-                                            if ( self.group instanceof AccountGroup ) {
-
-                                                changes.group = new mf.ObjectId( self.group.id );
-
-                                            } else
-                                                return pcb( new restify.InvalidArgumentError( 'group|not Array and not AccountGroup' ) );
-
-                                            pcb();
-
-                                        } )
-
-                                    } else
-                                        pcb();
-
-
+                                // Field removing
+                                if ( ! self.group && originalAccount.group ) {
+                                    updUnset.group = 1;
+                                    return pcb();
                                 }
+
+
+                                // New data
+                                self.validators.group( self.group, function ( err ) {
+
+                                    if ( err ) return pcb( err ); // group|...
+
+                                    if ( self.group instanceof AccountGroup ) {
+                                        updSet.group = new mf.ObjectId( self.group.id );
+                                    } else
+                                        return pcb( new restify.InvalidArgumentError( 'group|not Array and not AccountGroup' ) );
+
+                                    pcb();
+
+                                } )
+
 
                             },
 
                             // individualPerms
                             function ( pcb ) {
 
-                                if ( self.individualPerms ) {
+                                // No changes
+                                if ( ! self.individualPerms && ! originalAccount.individualPerms ) return pcb();
 
-                                    if ( self.individualPerms !== originalAccount.individualPerms ) {
-
-                                        if ( mf.validatePerms( self.individualPerms ) ) {
-
-                                            changes.individualPerms = self.individualPerms;
-
-                                            pcb();
-
-                                        } else
-                                            return pcb( new restify.InvalidArgumentError( 'individualPerms|invalid' ) );
-
-
-                                    } else
-                                        pcb();
-
+                                // Field removing
+                                if ( ! self.individualPerms && originalAccount.individualPerms ) {
+                                    updUnset.individualPerms = 1;
+                                    return pcb();
                                 }
+
+                                // New data
+                                if ( mf.validatePerms( self.individualPerms ) ) {
+
+                                    updSet.individualPerms = self.individualPerms;
+
+                                    pcb();
+
+                                } else
+                                    return pcb( new restify.InvalidArgumentError( 'individualPerms|invalid' ) );
+
 
                             },
 
@@ -1648,7 +1506,7 @@ var Account = function ( data ) {
 
                                         if ( err ) return pcb( err ); // password|...
 
-                                        changes.password = passwordHash.generate( self.password );
+                                        updSet.password = passwordHash.generate( self.password );
 
                                         addPasswordProperty = true;
 
@@ -1657,7 +1515,7 @@ var Account = function ( data ) {
                                     } );
 
                                 } else
-                                    pcb();
+                                    return pcb();
 
                             }
 
@@ -1678,11 +1536,19 @@ var Account = function ( data ) {
                 // . Write changes to DB
                 function ( scb ) {
 
+                    var updateParameters = {};
+
+                    if ( ! Object.isEmpty( updSet ) )      updateParameters.$set = updSet;
+                    if ( ! Object.isEmpty( updUnset ) )  updateParameters.$unset = updUnset;
+
+                    // No changes
+                    if ( Object.isEmpty( updateParameters ) ) return scb();
+
                     AccountModel.update(
                         { _id: mf.ObjectId( self.id ) },
-                        { $set: changes },
+                        updateParameters,
                         { multi: false },
-                        function ( err, newAccountDocument ) {
+                        function ( err ) {
 
                             if ( err ) return scb( new restify.InternalError( 'Write changes error. Mongoose: ' + err.message ) );
 
@@ -1740,7 +1606,7 @@ var Account = function ( data ) {
 
                 if ( err ) return next( err );
 
-                next();
+                next( null, self );
 
             }
         );
