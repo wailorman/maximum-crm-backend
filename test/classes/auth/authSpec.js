@@ -177,7 +177,7 @@ var should            = require( 'should' ),
 
     },
 
-    theNewToken, theNewTokens, theNewAccount, theNewAccountGroup, theNewAccountArguments;
+    theNewToken, theNewAccount, theNewAccountGroup, theNewAccountArguments;
 
 describe( 'Auth system', function () {
 
@@ -552,6 +552,12 @@ describe( 'Auth system', function () {
             );
 
         } );
+
+    } );
+
+    after( function ( done ) {
+
+        mongoose.connection.close( done );
 
     } );
 

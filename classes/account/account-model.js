@@ -19,7 +19,7 @@ var accountSchema = new Schema( {
     },
 
     group: {
-        type: Schema.Types.ObjectId         // TODO change to array of ObjectId's
+        type: Schema.Types.ObjectId
     },
 
     deleted: {

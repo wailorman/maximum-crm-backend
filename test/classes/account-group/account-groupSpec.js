@@ -1,16 +1,231 @@
-var should = require( 'should' );
-var mongoose = require( 'mongoose' );
-var async = require( 'async' );
-var mf = require( '../../../libs/mini-funcs.js' );
+var should            = require( 'should' ),
+    mongoose          = require( 'mongoose' ),
+    async             = require( 'async' ),
+    mf                = require( '../../../libs/mini-funcs.js' ),
+    restify           = require( 'restify' ),
 
-var AccountGroup = require( '../../../classes/account-group/account-group.js' );
-//var AccountGroup = new AccountGroup();
-var AccountGroupModel = require( '../../../classes/account-group/account-group-model.js' ).AccountGroupModel;
+    AccountGroup      = require( '../../../classes/account-group/account-group.js' ),
+    AccountGroupModel = require( '../../../classes/account-group/account-group-model.js' ).AccountGroupModel,
 
-var Account = require( '../../../classes/account/account.js' );
-var AccountModel = require( '../../../classes/account/account-model.js' ).AccountModel;
+    Account           = require( '../../../classes/account/account.js' ),
+    AccountModel      = require( '../../../classes/account/account-model.js' ).AccountModel,
 
-var theNewAccountGroup;
+    theNewAccountGroup, theNewAccountGroupArguments,
+    foundAccountGroup,
+
+    theNewAccountGroups,
+
+
+    theNewAccount, theNewAccountArguments,
+
+
+    cleanUp           = {
+
+        AccountGroup: function ( next ) {
+
+            AccountGroupModel.find().remove().exec( function ( err ) {
+
+                should.not.exist( err );
+                next();
+
+            } );
+
+        },
+
+        Account: function ( next ) {
+
+            AccountModel.find().remove().exec( function ( err ) {
+
+                should.not.exist( err );
+                next();
+
+            } );
+
+        }
+
+    },
+
+    reCreate          = {
+
+        AccountGroup: function ( next ) {
+
+            cleanUp.AccountGroup( function () {
+
+                theNewAccountGroupArguments = {
+                    name:  'theAccountGroup',
+                    perms: {
+                        hall: {
+                            create: true
+                        }
+                    }
+                };
+
+                theNewAccountGroup = new AccountGroup();
+                theNewAccountGroup.create( theNewAccountGroupArguments, function ( err ) {
+
+                    should.not.exist( err );
+                    next();
+
+                } );
+
+            } );
+
+        },
+
+        Account: function ( next ) {
+
+            async.series(
+                [
+                    function ( scb ) {
+
+                        cleanUp.Account( scb );
+
+                    },
+                    function ( scb ) {
+
+                        theNewAccount = new Account();
+
+                        theNewAccountArguments = {
+                            name:            'theNewAccount',
+                            password:        '1234',
+                            individualPerms: {
+                                hall: {
+                                    create: true
+                                }
+                            }
+                        };
+
+                        if ( theNewAccountGroup )
+                            theNewAccountArguments.group = theNewAccountGroup;
+
+                        theNewAccount.create(
+                            theNewAccountArguments,
+                            function ( err ) {
+
+                                should.not.exist( err );
+
+                                scb();
+
+                            }
+                        );
+
+                    }
+                ],
+                function () {
+                    next();
+                }
+            );
+
+        },
+
+        full: function ( next ) {
+
+            async.series(
+                [
+                    this.AccountGroup,
+                    this.Account
+                ],
+                function () {
+                    next();
+                }
+            );
+
+        }
+
+    },
+
+    testTemplates     = {
+
+        find: {
+
+            shouldFind: function () {
+            },
+
+            shouldReturn404: function () {
+            },
+
+            shouldCallError: function () {
+            }
+
+        },
+
+        findOne: {
+
+            /**
+             *
+             * @param isFull
+             * @param filter
+             * @param done
+             */
+            shouldFind: function ( isFull, filter, done ) {
+
+                foundAccountGroup = new AccountGroup();
+
+                var funcName = isFull ? 'findOne' : 'findOneShort';
+
+                foundAccountGroup[ funcName ]( filter, function ( err ) {
+
+                    should.not.exist( err );
+
+                    if ( isFull )
+                        foundAccountGroup.isFull().should.eql( true );
+                    else
+                        foundAccountGroup.isShort().should.eql( true );
+
+                    done();
+
+                } );
+
+            },
+
+            /**
+             *
+             * @param isFull
+             * @param filter
+             * @param done
+             */
+            shouldReturn404: function ( isFull, filter, done ) {
+
+                foundAccountGroup = new AccountGroup();
+
+                var funcName = isFull ? 'findOne' : 'findOneShort';
+
+                foundAccountGroup[ funcName ]( filter, function ( err ) {
+
+                    should.exist( err );
+                    err.should.be.instanceof( restify.ResourceNotFoundError );
+
+                    done();
+
+                } );
+
+            },
+
+            /**
+             *
+             * @param isFull
+             * @param filter
+             * @param done
+             */
+            shouldCallError: function ( isFull, filter, done ) {
+
+                foundAccountGroup = new AccountGroup();
+
+                var funcName = isFull ? 'findOne' : 'findOneShort';
+
+                foundAccountGroup[ funcName ]( filter, function ( err ) {
+
+                    should.exist( err );
+
+                    done();
+
+                } );
+
+            }
+
+        }
+
+    };
 
 describe( 'AccountGroup module testing', function () {
 
@@ -34,7 +249,7 @@ describe( 'AccountGroup module testing', function () {
             } );
     } );
 
-    describe( '.create', function () {
+    describe( '.create()', function () {
 
         beforeEach( function ( done ) {
 
@@ -339,7 +554,7 @@ describe( 'AccountGroup module testing', function () {
 
     } );
 
-    describe( '.update', function () {
+    describe( '.update()', function () {
 
         beforeEach( function ( done ) {
 
@@ -438,7 +653,9 @@ describe( 'AccountGroup module testing', function () {
                         function () {
 
                             for ( var i in newDataOfAccountGroup ) {
-                                theNewAccountGroup[ i ] = newDataOfAccountGroup[ i ];
+                                if ( newDataOfAccountGroup.hasOwnProperty( i ) ) {
+                                    theNewAccountGroup[ i ] = newDataOfAccountGroup[ i ];
+                                }
                             }
 
                             theNewAccountGroup.update( function ( err ) {
@@ -527,7 +744,9 @@ describe( 'AccountGroup module testing', function () {
 
 
                                                 for ( var i in data ) {
-                                                    theNewAccountGroup[ i ] = data[ i ];
+                                                    if ( data.hasOwnProperty( i ) ) {
+                                                        theNewAccountGroup[ i ] = data[ i ];
+                                                    }
                                                 }
 
 
@@ -637,9 +856,35 @@ describe( 'AccountGroup module testing', function () {
 
         } );
 
+        it( 'should not update id after updating', function ( done ) {
+
+            var oldId = theNewAccountGroup.id;
+
+            theNewAccountGroup.name = 'AwesomeName';
+            theNewAccountGroup.update( function ( err ) {
+
+                should.not.exist( err );
+                theNewAccountGroup.id.should.eql( oldId );
+                done();
+
+            } );
+
+        } );
+
+        it( 'should not call error when no changes', function ( done ) {
+
+            theNewAccountGroup.update( function ( err ) {
+
+                should.not.exist( err );
+                done();
+
+            } );
+
+        } );
+
     } );
 
-    describe( '.remove', function () {
+    describe( '.remove()', function () {
 
         beforeEach( function ( done ) {
 
@@ -647,7 +892,7 @@ describe( 'AccountGroup module testing', function () {
 
             theNewAccountGroup.create(
                 {
-                    name:  'Foo',
+                    name:  'Foo2345',
                     perms: {
                         hall: {
                             whiskey: true
@@ -674,9 +919,26 @@ describe( 'AccountGroup module testing', function () {
 
         } );
 
-        it( 'should not find removed AccountGroup' );
+        it( 'should not find removed AccountGroup', function ( done ) {
 
-        it( 'should mark removed AccountGroup as {deleted: true}' );
+            var removedAccountGroupId = theNewAccountGroup.id;
+
+            theNewAccountGroup.remove( function ( err ) {
+
+                should.not.exist( err );
+                theNewAccountGroup = new AccountGroup();
+
+                theNewAccountGroup.findOne( { id: removedAccountGroupId }, function ( err ) {
+
+                    should.exist( err );
+                    err.should.be.instanceof( restify.ResourceNotFoundError );
+                    done();
+
+                } );
+
+            } );
+
+        } );
 
         it( 'should not remove already removed AccountGroup', function ( done ) {
 
@@ -700,9 +962,9 @@ describe( 'AccountGroup module testing', function () {
 
         } );
 
-        xit( 'should update Accounts info which using this AccountGroup', function ( done ) {
+        it( 'should update Accounts info which using this AccountGroup', function ( done ) {
 
-            var testAccounts;
+            var testAccounts = [];
 
             async.series(
                 [
@@ -732,12 +994,16 @@ describe( 'AccountGroup module testing', function () {
                                     testUserData,
                                     function ( err ) {
                                         if ( err ) return ecb( err );
-                                        ecb( null, testUser );
+
+                                        testAccounts.push( testUser );
+
+                                        ecb();
                                     } );
                             },
                             function ( err, results ) {
                                 if ( err ) return scb( err );
-                                testAccounts = results;
+                                //testAccounts = results;
+                                scb();
                             }
                         );
                     },
@@ -752,146 +1018,451 @@ describe( 'AccountGroup module testing', function () {
                     },
 
                     // checking Account
-                    function () {
+                    function ( scb ) {
 
                         async.each(
                             testAccounts,
                             function ( testAccount, ecb ) {
                                 var updatedTestAccount = new Account();
 
-                                updatedTestAccount.getById( testAccount.id, function ( err ) {
-                                    if ( err ) return ecb( err );
+                                updatedTestAccount.findOneShort( { id: testAccount.id }, function ( err ) {
+                                    should.not.exist( err );
+                                    should.not.exist( updatedTestAccount.group );
 
-                                    updatedTestAccount.group.should.eql( null );
+                                    ecb();
                                 } );
                             },
-                            function ( err ) {
-                                should.not.exist( err );
-                                done();
+                            function () {
+                                scb();
                             }
                         );
 
                     }
-                ]
+                ],
+                done
             );
 
         } );
 
     } );
 
-    describe( '.getById', function () {
+    describe( 'Array.findShortAccountGroups()', function () {
+
+        before( function ( done ) {
+            cleanUp.AccountGroup( done );
+        } );
+
+        it( 'should return empty array when no AccountGroups', function ( done ) {
+
+            theNewAccountGroups = [];
+
+            theNewAccountGroups.findShortAccountGroups( null, function ( err ) {
+
+                should.not.exist( err );
+
+                theNewAccountGroups.length.should.eql( 0 );
+
+                done();
+
+            } );
+
+        } );
+
+        it( 'should return list of all AccountGroups', function ( done ) {
+
+            async.times(
+                5,
+
+                // Create AccountGroups for testing
+                function ( n, tcb ) {
+
+                    var anAccountGroup = new AccountGroup();
+
+                    anAccountGroup.create(
+                        { name: 'theGrooooup' + n },
+                        function ( err ) {
+
+                            should.not.exist( err );
+                            tcb();
+
+                        }
+                    );
+
+                },
+
+                // Checking
+                function () {
+
+                    theNewAccountGroups = [];
+
+                    theNewAccountGroups.findShortAccountGroups( null, function ( err ) {
+
+                        should.not.exist( err );
+
+                        theNewAccountGroups.length.should.eql( 5 );
+
+                        theNewAccountGroups[ 0 ].name.should.eql( 'theGrooooup0' );
+                        theNewAccountGroups[ 1 ].name.should.eql( 'theGrooooup1' );
+                        theNewAccountGroups[ 2 ].name.should.eql( 'theGrooooup2' );
+                        theNewAccountGroups[ 3 ].name.should.eql( 'theGrooooup3' );
+                        theNewAccountGroups[ 4 ].name.should.eql( 'theGrooooup4' );
+
+                        done();
+
+                    } );
+
+
+                }
+            );
+
+        } );
+
+    } );
+
+    describe( '.findOneShort()', function () {
 
         beforeEach( function ( done ) {
+            reCreate.AccountGroup( done );
+        } );
 
-            //theNewAccountGroup = null;
+        it( 'should find AccountGroup by id', function ( done ) {
 
-            async.series( [
+            testTemplates.findOne.shouldFind(
+                false,
+                { id: theNewAccountGroup.id },
+                done
+            );
 
-                    // Remove old AccountGroup
-                    function ( seriesCallback ) {
+        } );
 
-                        AccountGroupModel.find().remove().exec(
-                            function ( err ) {
-                                should.not.exist( err );
-                                seriesCallback();
+        it( 'should find AccountGroup by name', function ( done ) {
+
+            testTemplates.findOne.shouldFind(
+                false,
+                { name: theNewAccountGroupArguments.name },
+                done
+            );
+
+        } );
+
+        it( 'should sure that found object is short', function ( done ) {
+
+            testTemplates.findOne.shouldFind(
+                false,
+                { id: theNewAccountGroup.id },
+                function () {
+
+                    foundAccountGroup.isShort().should.eql( true );
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'should not find with invalid filter', function ( done ) {
+
+            async.eachSeries(
+                [
+                    { id: theNewAccountGroup },
+                    { id: '' },
+                    { id: null },
+
+                    { name: theNewAccountGroup },
+                    { name: '' },
+                    { name: null }
+                ],
+                function ( filter, escb ) {
+
+                    testTemplates.findOne.shouldCallError( false, filter, escb );
+
+                },
+                function () {
+                    done();
+                }
+            );
+
+
+        } );
+
+        it( 'should not find nonexistent AccountGroup', function ( done ) {
+
+            var removedAccountGroup = theNewAccountGroup;
+
+            theNewAccountGroup.remove( function ( err ) {
+
+                should.not.exist( err );
+
+                testTemplates.findOne.shouldReturn404( false, { id: removedAccountGroup.id }, done );
+
+            } );
+
+        } );
+
+        it( 'should call error on null filter', function ( done ) {
+
+            testTemplates.findOne.shouldCallError( false, null, done );
+
+        } );
+
+        it( 'should call error when passing id and name to the filter', function ( done ) {
+
+            testTemplates.findOne.shouldCallError(
+                false,
+                { id: theNewAccountGroup.id, name: theNewAccountGroupArguments.name },
+                done
+            );
+
+        } );
+
+    } );
+
+    describe( '.findOne()', function () {
+
+        beforeEach( function ( done ) {
+            reCreate.full( done );
+        } );
+
+        it( 'should find AccountGroup by id', function ( done ) {
+
+            testTemplates.findOne.shouldFind(
+                true,
+                { id: theNewAccountGroup.id },
+                function () {
+
+                    foundAccountGroup.id.should.eql( theNewAccountGroup.id );
+                    foundAccountGroup.name.should.eql( theNewAccountGroupArguments.name );
+                    foundAccountGroup.perms.should.eql( theNewAccountGroupArguments.perms );
+
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'should find AccountGroup by name', function ( done ) {
+
+            testTemplates.findOne.shouldFind(
+                true,
+                { name: theNewAccountGroupArguments.name },
+                function () {
+
+                    foundAccountGroup.id.should.eql( theNewAccountGroup.id );
+                    foundAccountGroup.name.should.eql( theNewAccountGroupArguments.name );
+                    foundAccountGroup.perms.should.eql( theNewAccountGroupArguments.perms );
+
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'should sure that found object is full', function ( done ) {
+
+            testTemplates.findOne.shouldFind(
+                true,
+                { id: theNewAccountGroup.id },
+                function () {
+
+                    foundAccountGroup.isFull().should.eql( true );
+
+                    foundAccountGroup.id.should.eql( theNewAccountGroup.id );
+                    foundAccountGroup.name.should.eql( theNewAccountGroupArguments.name );
+                    foundAccountGroup.perms.should.eql( theNewAccountGroupArguments.perms );
+
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'should not find with invalid filter', function ( done ) {
+
+            async.eachSeries(
+                [
+                    { id: theNewAccountGroup },
+                    { id: '' },
+                    { id: null },
+
+                    { name: theNewAccountGroup },
+                    { name: '' },
+                    { name: null }
+                ],
+                function ( filter, escb ) {
+
+                    testTemplates.findOne.shouldCallError( true, filter, escb );
+
+                },
+                function () {
+                    done();
+                }
+            );
+
+
+        } );
+
+        it( 'should not find nonexistent AccountGroup', function ( done ) {
+
+            var removedAccountGroup = theNewAccountGroup;
+
+            theNewAccountGroup.remove( function ( err ) {
+
+                should.not.exist( err );
+
+                testTemplates.findOne.shouldReturn404( true, { id: removedAccountGroup.id }, done );
+
+            } );
+
+        } );
+
+        it( 'should call error on null filter', function ( done ) {
+
+            testTemplates.findOne.shouldCallError( true, null, done );
+
+        } );
+
+        it( 'should call error when passing id and name to the filter', function ( done ) {
+
+            testTemplates.findOne.shouldCallError(
+                true,
+                { id: theNewAccountGroup.id, name: theNewAccountGroupArguments.name },
+                done
+            );
+
+        } );
+
+        it( 'should return correct members of the group', function ( done ) {
+
+            //var createdAccounts = [];
+
+            async.series(
+                [
+
+                    // . Cleanup old Accounts
+                    function ( scb ) {
+
+                        cleanUp.Account( scb );
+
+                    },
+
+                    // . Create Accounts
+                    function ( scb ) {
+
+                        async.times(
+                            3,
+                            function ( n, tcb ) {
+
+                                var theAccount = new Account();
+
+                                theAccount.create(
+                                    {
+                                        name:     'groupMember' + n,
+                                        password: '1234',
+                                        group:    theNewAccountGroup
+                                    },
+                                    function ( err ) {
+
+                                        should.not.exist( err );
+                                        tcb();
+
+                                    }
+                                );
+
+                            },
+                            function () {
+                                scb();
                             }
                         );
 
                     },
 
-                    // Create new AccountGroup
-                    function ( seriesCallback ) {
+                    // . Get AccountGroup
+                    function ( scb ) {
+
+                        var groupId = theNewAccountGroup.id;
 
                         theNewAccountGroup = new AccountGroup();
-                        theNewAccountGroup.create(
-                            {
-                                name:  'Foo2222',
-                                perms: {
-                                    hall: {
-                                        whiskey: true
-                                    }
-                                }
+                        theNewAccountGroup.findOne( { id: groupId }, function ( err ) {
+
+                            should.not.exist( err );
+
+                            scb();
+
+                        } );
+
+                    },
+
+                    // . Check Accounts existent
+                    function ( scb ) {
+
+                        theNewAccountGroup.members.length.should.eql( 3 );
+
+                        async.each(
+                            theNewAccountGroup.members,
+                            function ( theAccount, ecb ) {
+
+                                theAccount.name.should.match( /groupMember/ );
+                                ecb();
+
                             },
-                            function ( err ) {
-                                should.not.exist( err );
-                                //theNewAccountGroup = foundAccountGroup;
-                                seriesCallback();
+                            function () {
+                                scb();
                             }
                         );
+
                     }
+
                 ],
-                function ( err ) {
-                    should.not.exist( err );
-                    done();
-                } );
-
-
-        } );
-
-        it( 'should get AccountGroup', function ( done ) {
-
-            var theNewAccountGroup2 = new AccountGroup();
-            theNewAccountGroup2.getById(
-                theNewAccountGroup.id,
-                function ( err ) {
-                    should.not.exist( err );
-
-                    theNewAccountGroup2.should.be.instanceof( AccountGroup );
-                    theNewAccountGroup2.id.should.eql( theNewAccountGroup.id );
-                    theNewAccountGroup2.name.should.eql( theNewAccountGroup.name );
-
-
+                function () {
                     done();
                 }
             );
 
         } );
 
-        it( 'should not get removed AccountGroup', function ( done ) {
+        it( 'should return empty array if there is no members in the group', function ( done ) {
 
-            theNewAccountGroup.remove(
-                function ( err ) {
-                    should.not.exist( err );
-
-                    var accountToFind = new AccountGroup();
-
-                    accountToFind.getById(
-                        theNewAccountGroup.id,
-                        function ( err ) {
-                            should.exist( err );
-                            done();
-                        }
-                    );
-
-                }
-            );
-
-        } );
-
-        it( 'should not call with invalid params', function ( done ) {
-
-            async.eachSeries(
+            async.series(
                 [
-                    '',
-                    'ab69ba69ab676ab67',
-                    {},
-                    { id: 8383 },
-                    null,
-                    true,
-                    false
+
+                    // . Make leave group
+                    function ( scb ) {
+
+                        theNewAccount.group = null;
+                        theNewAccount.update( function ( err ) {
+
+                            should.not.exist( err );
+                            should.not.exist( theNewAccount.group );
+                            scb();
+
+                        } );
+
+                    },
+
+
+                    // . Get AccountGroup
+                    function ( scb ) {
+
+                        var groupId = theNewAccountGroup.id;
+
+                        theNewAccountGroup = new AccountGroup();
+
+                        theNewAccountGroup.findOne( { id: groupId }, function ( err ) {
+
+                            should.not.exist( err );
+                            theNewAccountGroup.members.length.should.eql( 0 );
+
+                            scb();
+
+                        } );
+
+                    }
+
                 ],
-                function ( invalidId, escb ) {
-
-                    theNewAccountGroup = new AccountGroup();
-
-                    theNewAccountGroup.getById( invalidId, function ( err ) {
-                        should.exist( err );
-                        escb();
-                    } );
-
-                },
-                function ( err ) {
-                    should.not.exist( err );
+                function () {
                     done();
                 }
             );
@@ -900,9 +1471,149 @@ describe( 'AccountGroup module testing', function () {
 
     } );
 
+    describe( '.addPermissions()', function () {
 
-    after( function () {
-        mongoose.disconnect();
+        beforeEach( function ( done ) {
+
+            async.series(
+                [
+
+                    function ( scb ) {
+                        reCreate.full( scb );
+                    },
+                    function ( scb ) {
+
+                        var groupId = theNewAccountGroup.id;
+
+                        theNewAccountGroup = new AccountGroup();
+
+                        theNewAccountGroup.findOneShort( { id: groupId }, function ( err ) {
+
+                            should.not.exist( err );
+                            scb();
+
+                        } );
+
+
+                    }
+
+                ],
+                function () {
+                    done();
+                }
+            );
+        } );
+
+        it( 'should get permissions', function ( done ) {
+
+            theNewAccountGroup.addPermissions( function ( err, perms ) {
+
+                should.not.exist( err );
+
+                Object.equal( perms, theNewAccountGroupArguments.perms ).should.eql( true );
+
+                done();
+
+            } );
+
+        } );
+
+        it( 'should get permissions and add permissions to the object properties', function ( done ) {
+
+            theNewAccountGroup.addPermissions( function ( err ) {
+
+                should.not.exist( err );
+
+                Object.equal( theNewAccountGroup.perms, theNewAccountGroupArguments.perms ).should.eql( true );
+
+                done();
+
+            } );
+
+        } );
+
+        it( 'should not get permissions of nonexistent AccountGroup', function ( done ) {
+
+            var removedAccountGroup = theNewAccountGroup;
+
+            async.series(
+                [
+
+                    // . Remove AccountGroup
+                    function ( scb ) {
+                        theNewAccountGroup.remove( scb );
+                    },
+
+                    // . Try to get permissions
+                    function ( scb ) {
+                        removedAccountGroup.addPermissions( function ( err ) {
+
+                            should.exist( err );
+                            err.should.be.instanceof( restify.InvalidArgumentError );
+                            scb();
+
+                        } );
+
+
+                    }
+
+                ],
+                function ( err ) {
+                    should.not.exist( err );
+                    done();
+                }
+            );
+
+        } );
+
+        it( 'should return {} permissions if AccountGroup does not have permissions', function ( done ) {
+
+            async.series(
+                [
+
+                    // . Remove AccountGroup's permissions
+                    function ( scb ) {
+
+                        theNewAccountGroup.perms = null;
+                        theNewAccountGroup.update( function ( err ) {
+
+                            should.not.exist( err );
+                            should.not.exist( theNewAccountGroup.perms );
+                            scb();
+
+                        } );
+
+                    },
+
+                    // . Try to get permissions
+                    function ( scb ) {
+
+                        theNewAccountGroup.addPermissions( function ( err, perms ) {
+
+                            should.not.exist( err );
+
+                            perms.should.eql( {} );
+
+                            scb();
+
+                        } );
+
+                    }
+
+                ],
+                function () {
+                    done();
+                }
+            );
+
+        } );
+
+    } );
+
+    after( function ( done ) {
+
+        mongoose.connection.close( done );
+
     } );
 
 } );

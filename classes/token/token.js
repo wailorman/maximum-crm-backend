@@ -18,7 +18,7 @@ var Token = function () {
 
     var self = this;
 
-    this.validators = {
+    this._validators = {
 
         /**
          * Token validator
@@ -170,7 +170,7 @@ var Token = function () {
                             // account
                             function ( vscb ) {
 
-                                self.validators.account( data.account, vscb );
+                                self._validators.account( data.account, vscb );
 
                             },
 
@@ -178,7 +178,7 @@ var Token = function () {
                             function ( vscb ) {
 
                                 if ( data.ttl )
-                                    self.validators.ttl( data.ttl, vscb );
+                                    self._validators.ttl( data.ttl, vscb );
                                 else
                                     vscb();
 
@@ -262,7 +262,7 @@ var Token = function () {
                 // . Validate filter
                 function ( scb ) {
 
-                    self.validators.token( filter.token, scb );
+                    self._validators.token( filter.token, scb );
 
                 },
 
@@ -329,7 +329,7 @@ var Token = function () {
                 // . Validate id
                 function ( scb ) {
 
-                    self.validators.token( self.token, scb );
+                    self._validators.token( self.token, scb );
 
                 },
 

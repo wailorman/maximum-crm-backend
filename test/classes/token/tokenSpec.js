@@ -630,4 +630,10 @@ describe( 'Token class', function () {
 
     } );
 
+    after( function ( done ) {
+
+        mongoose.connection.close( done );
+
+    } );
+
 } );

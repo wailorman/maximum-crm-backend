@@ -680,7 +680,7 @@ describe( 'Account module testing', function () {
 
                 it( 'should validate', function ( done ) {
 
-                    theNewAccount.validators.id( '548dfad210b13dc0226ef8c1', function ( err ) {
+                    theNewAccount._validators.id( '548dfad210b13dc0226ef8c1', function ( err ) {
                         should.not.exist( err );
                         done();
                     } );
@@ -697,7 +697,7 @@ describe( 'Account module testing', function () {
                             {},
                             ''
                         ],
-                        theNewAccount.validators.id,
+                        theNewAccount._validators.id,
                         function ( err ) {
                             should.exist( err );
                             done();
@@ -718,7 +718,7 @@ describe( 'Account module testing', function () {
                             'snoberik',
                             'iTs Some STRanGe StRiNg'
                         ],
-                        theNewAccount.validators.name,
+                        theNewAccount._validators.name,
                         function ( err ) {
                             should.not.exist( err );
                             done();
@@ -737,47 +737,7 @@ describe( 'Account module testing', function () {
                             {},
                             null
                         ],
-                        theNewAccount.validators.name,
-                        function ( err ) {
-                            should.exist( err );
-                            done();
-                        }
-                    );
-
-                } );
-
-            } );
-
-            describe( 'token', function () {
-
-                it( 'should validate', function ( done ) {
-
-                    async.each(
-                        [
-                            'awDdqOeBF9DmEbRNi4EcNofL',
-                            '548dfad210b13dc0226ef8c1'
-                        ],
-                        theNewAccount.validators.token,
-                        function ( err ) {
-                            should.not.exist( err );
-                            done();
-                        }
-                    );
-
-                } );
-
-                it( 'should not validate', function ( done ) {
-
-                    async.each(
-                        [
-                            'a',
-                            null,
-                            true,
-                            false,
-                            {},
-                            []
-                        ],
-                        theNewAccount.validators.token,
+                        theNewAccount._validators.name,
                         function ( err ) {
                             should.exist( err );
                             done();
@@ -796,7 +756,7 @@ describe( 'Account module testing', function () {
                         [
                             theNewAccountGroup
                         ],
-                        theNewAccount.validators.group,
+                        theNewAccount._validators.group,
                         function ( err ) {
                             should.not.exist( err );
                             done();
@@ -825,7 +785,7 @@ describe( 'Account module testing', function () {
                                     [
                                         theNewAccountGroup
                                     ],
-                                    theNewAccount.validators.group,
+                                    theNewAccount._validators.group,
                                     function ( err ) {
                                         should.exist( err );
                                         scb();
@@ -849,7 +809,7 @@ describe( 'Account module testing', function () {
 
         } );
 
-        describe( '.validateParameters()', function () {
+        describe( '._validateParameters()', function () {
 
             it( 'should validate successfully', function ( done ) {
 
@@ -857,10 +817,9 @@ describe( 'Account module testing', function () {
                     [
                         { id: '548dfad210b13dc0226ef8c1' },
                         { name: 'wailorman' },
-                        { token: 'awDdqOeBF9DmEbRNi4EcNofL' },
                         { group: theNewAccountGroup }
                     ],
-                    theNewAccount.validateParameters,
+                    theNewAccount._validateParameters,
                     function ( err ) {
                         should.not.exist( err );
                         done();
@@ -916,7 +875,7 @@ describe( 'Account module testing', function () {
 
                                     { group: theNewAccountGroup }
                                 ],
-                                theNewAccount.validateParameters,
+                                theNewAccount._validateParameters,
                                 function ( err ) {
                                     should.exist( err );
                                     scb();
@@ -945,7 +904,7 @@ describe( 'Account module testing', function () {
 
     } );
 
-    describe( '.prepareFindQuery()', function () {
+    describe( '._prepareFindQuery()', function () {
 
         before( function ( done ) {
 
@@ -1114,7 +1073,7 @@ describe( 'Account module testing', function () {
                             ],
                             function ( parameters, escb ) {
 
-                                theNewAccount.prepareFindQuery( parameters[ 0 ], function ( err, query ) {
+                                theNewAccount._prepareFindQuery( parameters[ 0 ], function ( err, query ) {
                                     should.not.exist( err );
 
                                     query.should.be.eql( parameters[ 1 ] );
@@ -1275,12 +1234,6 @@ describe( 'Account module testing', function () {
                         theNewAccount.name.should.be.type( 'string' );
                         theNewAccount.name.should.eql( accountData.name );
 
-
-                        // password
-                        //theNewAccount.should.have.property( 'password' );
-                        //theNewAccount.password.should.be.type( 'string' );
-                        //passwordHash.isHashed( theNewAccount.password ).should.eql( true );
-
                         // individualPerms
                         if ( accountData.individualPerms ) {
                             theNewAccount.should.have.property( 'individualPerms' );
@@ -1295,7 +1248,6 @@ describe( 'Account module testing', function () {
 
                             //newAccount.group.should.have.properties('id', 'name', 'perms');
                             theNewAccount.group.id.should.eql( accountData.group.id );
-                            theNewAccount.group.deleted.should.eql( false );
 
                             theNewAccount.group.should.be.instanceof( AccountGroup );
                         }
@@ -1313,6 +1265,311 @@ describe( 'Account module testing', function () {
                     done();
                 }
             );
+
+        } );
+
+        describe( 'perms merging', function () {
+
+            var groupForTest, accountForTest;
+
+            beforeEach( function ( done ) {
+
+                cleanUp.full( done );
+
+            } );
+
+            it( 'no perms', function ( done ) {
+
+                async.series(
+                    [
+
+                        // . Creare group
+                        function ( scb ) {
+
+                            groupForTest = new AccountGroup();
+
+                            groupForTest.create(
+                                {
+                                    name: 'group'
+                                },
+                                function ( err ) {
+
+                                    should.not.exist( err );
+                                    scb();
+
+                                }
+                            );
+
+                        },
+
+                        // . Create account
+                        function ( scb ) {
+
+                            accountForTest = new Account();
+
+                            accountForTest.create(
+                                {
+                                    name:     'account',
+                                    password: '1234',
+                                    group:    groupForTest
+                                },
+                                function ( err ) {
+                                    should.not.exist( err );
+                                    scb();
+                                }
+                            );
+
+                        },
+
+                        // . Check permissions
+                        function ( scb ) {
+
+                            accountForTest.perms.should.eql( {} );
+                            accountForTest.individualPerms.should.eql( {} );
+                            scb();
+
+                        }
+
+                    ],
+                    function () {
+                        done();
+                    }
+                );
+
+            } );
+
+            it( 'group perms only', function ( done ) {
+
+                async.series(
+                    [
+
+                        // . Creare group
+                        function ( scb ) {
+
+                            groupForTest = new AccountGroup();
+
+                            groupForTest.create(
+                                {
+                                    name:  'group',
+                                    perms: {
+                                        hall: {
+                                            create: true
+                                        }
+                                    }
+                                },
+                                function ( err ) {
+
+                                    should.not.exist( err );
+                                    scb();
+
+                                }
+                            );
+
+                        },
+
+                        // . Create account
+                        function ( scb ) {
+
+                            accountForTest = new Account();
+
+                            accountForTest.create(
+                                {
+                                    name:     'account',
+                                    group:    groupForTest,
+                                    password: '1234'
+                                },
+                                function ( err ) {
+                                    should.not.exist( err );
+                                    scb();
+                                }
+                            );
+
+                        },
+
+                        // . Check permissions
+                        function ( scb ) {
+
+                            accountForTest.perms.should.eql(
+                                {
+                                    hall: {
+                                        create: true
+                                    }
+                                }
+                            );
+                            accountForTest.individualPerms.should.eql( {} );
+                            scb();
+
+                        }
+
+                    ],
+                    function () {
+                        done();
+                    }
+                );
+
+            } );
+
+            it( 'group and individual perms', function ( done ) {
+
+                async.series(
+                    [
+
+                        // . Creare group
+                        function ( scb ) {
+
+                            groupForTest = new AccountGroup();
+
+                            groupForTest.create(
+                                {
+                                    name:  'group',
+                                    perms: {
+                                        hall: {
+                                            create: true
+                                        }
+                                    }
+                                },
+                                function ( err ) {
+
+                                    should.not.exist( err );
+                                    scb();
+
+                                }
+                            );
+
+                        },
+
+                        // . Create account
+                        function ( scb ) {
+
+                            accountForTest = new Account();
+
+                            accountForTest.create(
+                                {
+                                    name:            'account',
+                                    password:        '1234',
+                                    group:           groupForTest,
+                                    individualPerms: {
+                                        lesson: {
+                                            create: true
+                                        }
+                                    }
+                                },
+                                function ( err ) {
+                                    should.not.exist( err );
+                                    scb();
+                                }
+                            );
+
+                        },
+
+                        // . Check permissions
+                        function ( scb ) {
+
+                            accountForTest.perms.should.eql(
+                                {
+                                    hall:   {
+                                        create: true
+                                    },
+                                    lesson: {
+                                        create: true
+                                    }
+                                }
+                            );
+                            accountForTest.individualPerms.should.eql(
+                                {
+                                    lesson: {
+                                        create: true
+                                    }
+                                }
+                            );
+                            scb();
+
+                        }
+
+                    ],
+                    function () {
+                        done();
+                    }
+                );
+
+            } );
+
+            it( 'individual perms only', function ( done ) {
+
+                async.series(
+                    [
+
+                        // . Creare group
+                        function ( scb ) {
+
+                            groupForTest = new AccountGroup();
+
+                            groupForTest.create(
+                                {
+                                    name: 'group'
+                                },
+                                function ( err ) {
+
+                                    should.not.exist( err );
+                                    scb();
+
+                                }
+                            );
+
+                        },
+
+                        // . Create account
+                        function ( scb ) {
+
+                            accountForTest = new Account();
+
+                            accountForTest.create(
+                                {
+                                    name:            'account',
+                                    password:        '1234',
+                                    group:           groupForTest,
+                                    individualPerms: {
+                                        lesson: {
+                                            create: true
+                                        }
+                                    }
+                                },
+                                function ( err ) {
+                                    should.not.exist( err );
+                                    scb();
+                                }
+                            );
+
+                        },
+
+                        // . Check permissions
+                        function ( scb ) {
+
+                            accountForTest.perms.should.eql(
+                                {
+                                    lesson: {
+                                        create: true
+                                    }
+                                }
+                            );
+                            accountForTest.individualPerms.should.eql(
+                                {
+                                    lesson: {
+                                        create: true
+                                    }
+                                }
+                            );
+                            scb();
+
+                        }
+
+                    ],
+                    function () {
+                        done();
+                    }
+                );
+
+            } );
 
         } );
 
@@ -1608,7 +1865,7 @@ describe( 'Account module testing', function () {
         // reCreate
         beforeEach( function ( done ) {
 
-            reCreate.Accounts( function () {
+            reCreate.full( function () {
                 done();
             } );
 
@@ -1671,7 +1928,7 @@ describe( 'Account module testing', function () {
         // reCreate
         beforeEach( function ( done ) {
 
-            reCreate.Accounts( function () {
+            reCreate.full( function () {
                 done();
             } );
 
@@ -1803,7 +2060,7 @@ describe( 'Account module testing', function () {
         // reCreate
         beforeEach( function ( done ) {
 
-            reCreate.Accounts( function () {
+            reCreate.full( function () {
                 done();
             } );
 
@@ -1929,7 +2186,7 @@ describe( 'Account module testing', function () {
         // reCreate
         beforeEach( function ( done ) {
 
-            reCreate.Accounts( function () {
+            reCreate.full( function () {
                 done();
             } );
 
@@ -2036,16 +2293,6 @@ describe( 'Account module testing', function () {
 
         //it( 'should find short by token' );
 
-        it( 'should not find nonexistent', function ( done ) {
-
-            testTemplates.find.shouldReturn404(
-                'findShortAccounts',
-                [ { id: '000000000000000000000000' } ],
-                done
-            );
-
-        } );
-
     } );
 
 
@@ -2144,7 +2391,7 @@ describe( 'Account module testing', function () {
             var invalidNewData = {
                 name:            [ '', '   ', true, false, null, {} ],
                 password:        [ '', '  ', true, false, null, {} ],
-                group:           [ '', '   ', true, {}, theNewAccount ],
+                group:           [ '   ', true, {}, theNewAccount ],
                 individualPerms: [ true, theNewAccount ]
             };
 
@@ -2266,6 +2513,46 @@ describe( 'Account module testing', function () {
 
         } );
 
+        it( 'should remove group prop', function ( done ) {
+
+            theNewAccount.group = null;
+            theNewAccount.update( function ( err ) {
+
+                should.not.exist( err );
+                should.not.exist( theNewAccount.group );
+
+                done();
+
+            } );
+
+        } );
+
+        it( 'should remove individualPerms prop (make it {})', function ( done ) {
+
+            theNewAccount.individualPerms = null;
+
+            theNewAccount.update( function ( err ) {
+
+                should.not.exist( err );
+                theNewAccount.individualPerms.should.eql( {} );
+
+                done();
+
+            } );
+
+        } );
+
+        it( 'should not call error if we didnt write any changes', function ( done ) {
+
+            theNewAccount.update( function ( err ) {
+
+                should.not.exist( err );
+                done();
+
+            } );
+
+        } );
+
     } );
 
 
@@ -2292,7 +2579,7 @@ describe( 'Account module testing', function () {
                 should.not.exist( err );
 
                 var getAccount = new Account();
-                getAccount.getById( theNewAccount.id, function ( err ) {
+                getAccount.findOne( { id: theNewAccount.id }, function ( err ) {
                     should.exist( err );
 
                     done();
@@ -2371,297 +2658,10 @@ describe( 'Account module testing', function () {
 
     } );
 
+    after( function ( done ) {
 
-    xdescribe( '.auth', function () {
-
-        beforeEach( function ( done ) {
-
-            reCreate.full( done );
-
-        } );
-
-        it( 'should authenticate Account', function ( done ) {
-
-            theNewAccount.auth( theNewAccount.name, theNewAccountArguments.password, function ( err ) {
-                should.not.exist( err );
-
-                theNewAccount.token.should.be.type( 'string' );
-
-                theNewAccount.validators.token( theNewAccount.token, function ( err ) {
-
-                    should.not.exist( err );
-                    done();
-
-                } );
-
-            } );
-
-        } );
-
-        it( 'should authenticate Account again', function ( done ) {
-
-            // First auth
-            theNewAccount.auth( theNewAccount.name, theNewAccountArguments.password, function ( err ) {
-                should.not.exist( err );
-
-                theNewAccount.token.should.be.type( 'string' );
-                var firstToken = theNewAccount.token;
-
-                // Second auth
-                theNewAccount.auth( theNewAccount.name, theNewAccountArguments.password, function ( err ) {
-                    should.not.exist( err );
-
-                    theNewAccount.token.should.be.type( 'string' );
-                    theNewAccount.token.should.not.eql( firstToken );
-
-                    done();
-                } );
-            } );
-
-        } );
-
-        it( 'should check Account have two Tokens after twice authorization', function ( done ) {
-
-            // First auth
-            theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
-                should.not.exist( err );
-
-                doc.token.should.be.type( 'string' );
-                var firstToken = doc.token[ 0 ];
-
-                // Second auth
-                theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
-                    should.not.exist( err );
-
-                    doc.token[ 1 ].should.be.type( 'string' );
-                    doc.token[ 0 ].should.eql( firstToken );
-                    doc.token[ 1 ].should.not.eql( firstToken );
-
-
-                    var secondToken = doc.token[ 1 ];
-
-
-                    var account1 = new Account();
-                    var account2 = new Account();
-
-                    account1.getByToken( firstToken, function ( err, doc ) {
-                        should.not.exist( err );
-                        doc.id.should.eql( theNewAccount.id );
-
-                        account2.getByToken( secondToken, function ( err, doc ) {
-                            should.not.exist( err );
-                            doc.id.should.eql( theNewAccount.id );
-
-                            done();
-                        } );
-
-                    } );
-                } );
-            } );
-
-        } );
-
-        it( 'should not authenticate user with incorrect pass', function ( done ) {
-
-            theNewAccount.auth( theNewAccount.name, '12345678987654', function ( err ) {
-                should.exist( err );
-                done();
-            } );
-
-        } );
-
-        it( 'should not authenticate with incorrect params', function ( done ) {
-
-            async.each(
-                [
-                    {
-                        name:     theNewAccount.name,
-                        password: null
-                    },
-                    {
-                        name:     theNewAccount.name,
-                        password: ''
-                    },
-                    {
-                        name:     true,
-                        password: true
-                    },
-                    {
-                        name:     null,
-                        password: null
-                    }
-                ],
-                function ( authData, escb ) {
-                    theNewAccount.auth( authData.name, authData.password, function ( err ) {
-                        should.exist( err );
-                        escb();
-                    } );
-                },
-                function ( err ) {
-                    should.not.exist( err );
-                    done();
-                }
-            );
-
-        } );
+        mongoose.connection.close( done );
 
     } );
-
-
-    xdescribe( '.logout', function () {
-
-        beforeEach( function ( done ) {
-
-            async.series( [
-
-                // Remove all old Accounts
-                function ( seriesCallback ) {
-                    AccountModel.find().remove().exec( function ( err ) {
-                        should.not.exist( err );
-                        seriesCallback();
-                    } );
-                },
-
-                // Create a new Account for tests
-                function () {
-
-                    theNewAccount = new Account();
-
-                    theNewAccount.create( {
-                        name:            'wailormanLogout',
-                        password:        '123',
-                        group:           theNewAccountGroup,
-                        individualPerms: {
-                            coaches: {
-                                create: true
-                            }
-                        }
-                    }, function ( err, createdAccount ) {
-                        should.not.exist( err );
-
-                        theNewAccount = createdAccount;
-
-                        done();
-                    } );
-
-                }
-            ] );
-
-        } );
-
-        it( 'should terminate all sessions of the Account', function ( done ) {
-
-            theNewAccount.auth( theNewAccount.name, '123', function ( err ) {
-                should.not.exist( err );
-
-                theNewAccount.auth( theNewAccount.name, '123', function ( err ) {
-                    should.not.exist( err );
-
-                    theNewAccount.logoutAll( function ( err, doc ) {
-                        should.not.exist( err );
-
-                        doc.id.should.eql( theNewAccount.id );
-
-                        doc.token.length.should.eql( 0 );
-
-                        done();
-
-                        // TODO Write DB checking
-                    } );
-                } );
-
-            } );
-
-        } );
-
-        it( 'should terminate only one session of the Account', function ( done ) {
-
-            theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
-                should.not.exist( err );
-                var firstToken = doc.token[ 0 ];
-
-                theNewAccount.auth( theNewAccount.name, '123', function ( err ) {
-                    should.not.exist( err );
-                    var secondToken = doc.token[ 1 ];
-
-                    theNewAccount.logout( firstToken, function ( err, doc ) {
-                        should.not.exist( err );
-
-                        doc.id.should.eql( theNewAccount.id );
-
-                        doc.token.length.should.eql( 1 );
-
-                        doc.token[ 0 ].should.eql( secondToken );
-
-                        done();
-
-                        // TODO Write DB checking
-                    } );
-                } );
-
-            } );
-
-        } );
-
-        it( 'should not call method with incorrect params', function ( done ) {
-
-            async.each(
-                [
-                    '', '123', true, false, null, {}
-                ],
-                function ( token, ecb ) {
-                    theNewAccount.logout( token, function ( err ) {
-                        should.exist( err );
-                        ecb();
-                    } );
-                },
-                function ( err ) {
-                    should.not.exist( err );
-                    done();
-                }
-            );
-
-        } );
-
-        it( 'should not call error when we calling .logoutAll without any active sessions', function ( done ) {
-
-            theNewAccount.logoutAll( function ( err ) {
-                should.not.exist( err );
-                done();
-            } );
-
-        } );
-
-        it( 'should call error when terminating nonexistent session', function ( done ) {
-
-            theNewAccount.logout( '000000000000000000000000', function ( err ) {
-                should.exist( err );
-                done();
-            } );
-
-        } );
-
-        it( 'should not terminate sessions of nonexistent Account', function ( done ) {
-
-            theNewAccount.auth( theNewAccount.name, '123', function ( err, doc ) {
-                should.not.exist( err );
-
-                var token = doc.token[ 0 ];
-                doc.remove( function ( err ) {
-                    should.not.exist( err );
-
-                    theNewAccount.getByToken( token, function ( err ) {
-                        should.exist( err );
-                        done();
-                    } );
-
-                } );
-
-            } );
-
-        } );
-
-    } );
-
 
 } );
