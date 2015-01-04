@@ -1,17 +1,17 @@
-var restify      = require( 'restify' ),
-    mongoose     = require( 'mongoose' ),
-    async        = require( 'async' ),
-    sugar        = require( 'sugar' ),
-    randToken    = require( 'rand-token' ),
+var restify    = require( 'restify' ),
+    mongoose   = require( 'mongoose' ),
+    async      = require( 'async' ),
+    sugar      = require( 'sugar' ),
+    randToken  = require( 'rand-token' ),
 
-    mf           = require( '../../libs/mini-funcs.js' ),
+    mf         = require( '../../libs/mini-funcs.js' ),
 
-    TokenModel   = require( './token-model.js' ).TokenModel,
+    TokenModel = require( './token-model.js' ).TokenModel,
 
-    Account      = require( '../account/account.js' ),
+    Account    = require( '../account/account.js' ),
 
 
-    defaultTTL   = 72; // in hours
+    defaultTTL = 72; // in hours
 
 
 var Token = function () {
@@ -41,30 +41,38 @@ var Token = function () {
         /**
          * Account validator
          *
-         * @param {Account}     value
-         * @param {function}    next
+         * @param {Account|string}      value
+         * @param {function}            next
          *
          * @throws InvalidArgumentError( 'account|404' )
          * @throws InternalError( 'account validator. findOneShort: ...' )
          */
         account: function ( value, next ) {
 
-            if ( value && value.id ) {
+            var idToFind;
 
-                var theAccount = new Account();
-                theAccount.findOneShort( { id: value.id }, function ( err ) {
 
-                    if ( err && err instanceof restify.ResourceNotFoundError )
-                        return next( new restify.InvalidArgumentError( 'account|404' ) );
-                    else if ( err )
-                        return next( new restify.InternalError( 'validators.account(): Account.findOneShort: ' + err.message ) );
+            if ( typeof value === 'string' )
+                idToFind = value;
 
-                    next();
+            else if ( value instanceof Account && value.id )
+                idToFind = value.id;
 
-                } );
+            else
+                return next( new restify.InvalidArgumentError( 'account|invalid type' ) );
 
-            } else
-                return next( new restify.InvalidArgumentError( 'account|null' ) );
+
+            var theAccount = new Account();
+            theAccount.findOneShort( { id: idToFind }, function ( err ) {
+
+                if ( err && err instanceof restify.ResourceNotFoundError )
+                    return next( new restify.InvalidArgumentError( 'account|404' ) );
+                else if ( err )
+                    return next( new restify.InternalError( 'validators.account(): Account.findOneShort: ' + err.message ) );
+
+                next();
+
+            } );
 
         },
 
@@ -199,10 +207,12 @@ var Token = function () {
                 // . Write data to DB
                 function ( scb ) {
 
+                    var accountId = data.account instanceof Account ? data.account.id : data.account;
+
                     var newTokenDocument = new TokenModel( {
 
                         token:   randToken.generate( 24 ),
-                        account: new mf.ObjectId( data.account.id ),
+                        account: new mf.ObjectId( accountId ),
                         created: new Date( curTimeMS ),
                         ttl:     data.ttl ?
                             new Date( curTimeMS + ( data.ttl * 1000 ) ) :

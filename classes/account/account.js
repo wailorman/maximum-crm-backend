@@ -753,13 +753,13 @@ Account.prototype.findOneShort = function ( filter, next ) {
 /**
  * Find several full Accounts objects by filter
  *
- * @param                           filter              May be null
+ * @param                               filter              May be null
  *
- * @param {string}                  [filter.id]
- * @param {string}                  [filter.name]
- * @param {string|AccountGroup}     [filter.group]      AccountGroup string id
+ * @param {string}                      [filter.id]
+ * @param {string|Array}                [filter.name]
+ * @param {string|Array|AccountGroup}   [filter.group]      AccountGroup string id
  *
- * @param {function}                next
+ * @param {function}                    next
  */
 Array.prototype.findAccounts = function ( filter, next ) {
 
