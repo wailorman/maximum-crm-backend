@@ -20,7 +20,7 @@ var authRoute = function ( req, res, next ) {
 
 var registerRoute = function ( req, res, next ) {
 
-    AccountModel.register( req.params.username, req.params.password, function ( err ) {
+    AccountModel.register( req.params, function ( err ) {
 
         if ( err ) return next( err );
 

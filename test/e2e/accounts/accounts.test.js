@@ -1,10 +1,11 @@
-var should   = require( 'should' ),
-    restify  = require( 'restify' ),
-    mongoose = require( 'mongoose' ),
-    AccountModel = require('../../../models/account.js');
+var should       = require( 'should' ),
+    restify      = require( 'restify' ),
+    mongoose     = require( 'mongoose' ),
+    async        = require( 'async' ),
+    AccountModel = require( '../../../models/account.js' );
 
 var restifyClient = restify.createJsonClient( {
-    url:     'http://localhost:21080/',
+    url: 'http://localhost:21080/',
     version: '*'
 } );
 
@@ -91,6 +92,11 @@ var tpls = {
             done();
 
         } );
+
+    },
+
+    createCoach: function ( params, done ) {
+
 
     }
 
@@ -183,6 +189,107 @@ describe( 'E2E Accounts', function () {
         it( 'should not return info if passed nonexistent token', function ( done ) {
 
             tpls.getInfoByToken( '00000000000000000000', 'Clerk', true, done );
+
+        } );
+
+    } );
+
+    describe( 'coach parameter', function () {
+
+        var coachId, accountWithCoachToken;
+
+        // create coach
+        before( function ( done ) {
+
+            restifyClient.post( '/coaches', { name: 'Accounts Test Coach' }, function ( err, req, res, data ) {
+
+                should.not.exist( err );
+
+                coachId = data._id;
+
+                done();
+
+            } );
+
+        } );
+
+        it( 'should create account with `coach` parameter', function ( done ) {
+
+            async.series( [
+
+                // register account
+                function ( scb ) {
+
+                    tpls.register(
+                        {
+                            username: 'coachAccount',
+                            password: '1234',
+                            coach: coachId
+                        },
+                        false,
+                        scb
+                    );
+
+                },
+
+                // auth
+                function ( scb ) {
+
+                    tpls.auth(
+                        {
+                            username: 'coachAccount',
+                            password: '1234'
+                        },
+                        false,
+                        function ( token ) {
+                            accountWithCoachToken = token;
+                            scb();
+                        }
+                    );
+
+                }
+
+            ], done );
+
+        } );
+
+        it( 'should return account with `coach` parameter if exist', function ( done ) {
+
+            restifyClient.get( '/accounts/' + accountWithCoachToken, function ( err, req, res, data ) {
+
+                should.not.exist( err );
+
+                data.coach.should.eql( coachId );
+                done();
+
+            } );
+
+        } );
+
+        it( 'should return account without `coach` parameter if there is not', function ( done ) {
+
+            restifyClient.get( '/accounts/' + tokenToUse, function ( err, req, res, data ) {
+
+                should.not.exist( err );
+
+                should.not.exist( data.coach );
+                done();
+
+            } );
+
+        } );
+
+        it( 'should not create account with nonexistent coach', function ( done ) {
+
+            tpls.register(
+                {
+                    username: 'coachAccount2',
+                    password: '1234',
+                    coach: '000000000000000000000000'
+                },
+                true,
+                done
+            );
 
         } );
 

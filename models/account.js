@@ -4,7 +4,9 @@ var mongoose     = require( 'mongoose' ),
     randToken    = require( 'rand-token' ),
     passwordHash = require( 'password-hash' ),
     restify      = require( 'restify' ),
-    async        = require( 'async' );
+    async        = require( 'async' ),
+
+    CoachModel   = require( '../models/coach.js' );
 
 //// SCHEMAS ///////////////////////////////////////
 
@@ -17,7 +19,7 @@ var accountSchema = new Schema( {
     },
 
     coach: {
-        type: ObjectId
+        type: Schema.Types.ObjectId
     },
 
     password: {
@@ -111,28 +113,65 @@ tokenSchema.statics.generateNew = function ( accountId, cb ) {
 
 /**
  *
- * @param {string} username
- * @param {string} password Not hashed!
+ * @param {string} params
+ * @param {string} params.username
+ * @param {string} params.password Not hashed!
+ * @param {string} [params.coach] id
  * @param cb err, doc
  */
-accountSchema.statics.register = function ( username, password, cb ) {
+accountSchema.statics.register = function ( params, cb ) {
+
+    var username = params.username,
+        password = params.password;
 
     if ( !username || !password ) return cb( new restify.InvalidArgumentError( 'username or password can\'t be empty' ) );
 
     var hashedPassword = passwordHash.generate( password );
 
-    var newAccountDocument = new AccountModel( {
-        name: username,
-        password: hashedPassword
-    } );
+    async.series( [
 
-    newAccountDocument.save( function ( err, doc ) {
+        // check coach existent if it was passed
+        function ( scb ) {
 
-        if ( err ) return cb( new restify.InternalError( 'Mongo write: ' + err.message ) );
+            if ( !params.coach ) return scb();
 
-        cb( null, doc );
+            CoachModel.findOne( { _id: new ObjectId( params.coach ) }, function ( err, doc ) {
 
-    } );
+                if ( err ) return scb( new restify.InternalError( "Mongo find passed coach: " + err.message ) );
+
+                if ( !doc ) return scb( new restify.InvalidArgumentError( "Passed coach does not exists" ) );
+
+                scb();
+
+            } );
+
+        },
+
+        // write
+        function ( scb ) {
+
+            var newAccountDocumentData = {
+                name: username,
+                password: hashedPassword
+            };
+
+            if ( params.coach ) newAccountDocumentData.coach = new ObjectId( params.coach );
+
+            var newAccountDocument = new AccountModel( newAccountDocumentData );
+
+
+
+            newAccountDocument.save( function ( err, doc ) {
+
+                if ( err ) return scb( new restify.InternalError( 'Mongo write: ' + err.message ) );
+
+                scb( null, doc );
+
+            } );
+
+        }
+
+    ], cb );
 
 };
 
