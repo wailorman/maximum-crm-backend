@@ -16,6 +16,10 @@ var accountSchema = new Schema( {
         required: true
     },
 
+    coach: {
+        type: ObjectId
+    },
+
     password: {
         type: String,
         required: true

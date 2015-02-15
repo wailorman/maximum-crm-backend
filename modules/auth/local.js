@@ -2,8 +2,6 @@ var restify       = require( 'restify' ),
     mongoose      = require( 'mongoose' ),
     async         = require( 'async' ),
     sugar         = require( 'sugar' ),
-    passport      = require( 'passport' ),
-    LocalStrategy = require( 'passport-local' ).Strategy,
 
     AccountModel  = require( '../../models/account.js' );
 
