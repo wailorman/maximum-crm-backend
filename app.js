@@ -3,6 +3,7 @@ var restify       = require( 'restify' ),
     mongoose      = require( 'mongoose' ),
     localAuth     = require( './modules/auth/local.js' ),
     coachesModule = require( './modules/coaches/coaches.js' );
+    clientsModule = require( './modules/clients/clients.js' );
     hallsModule = require( './modules/halls/halls.js' );
 
 mongoose.connect( 'mongodb://mongo.local/maximum-crm' );
@@ -19,6 +20,11 @@ server.get( '/coaches', coachesModule.getCoachesRoute );
 server.get( '/coaches/:id', coachesModule.getOneCoachRoute );
 server.post( '/coaches', coachesModule.createCoachRoute );
 server.del( '/coaches/:id', coachesModule.deleteCoachRoute );
+
+server.get( '/clients', clientsModule.getClientsRoute );
+server.get( '/clients/:id', clientsModule.getOneClientRoute );
+server.post( '/clients', clientsModule.createClientRoute );
+server.del( '/clients/:id', clientsModule.deleteClientRoute );
 
 server.get( '/halls', hallsModule.getHallsRoute );
 server.get( '/halls/:id', hallsModule.getOneHallRoute );
