@@ -127,6 +127,27 @@ var tpls = {
 
         } );
 
+    },
+
+    // @todo
+    put: function ( id, params, expectingError, done ) {
+
+        restifyClient.put( '/clients/'+id, params, function ( err, req, res, data ) {
+
+            if ( expectingError ) {
+                should.exist( err );
+                done();
+            }
+
+            should.not.exist( err );
+            should.exist( data );
+
+            data.should.eql( 'Client was deleted!' );
+
+            done();
+
+        } );
+
     }
 
 };
@@ -264,6 +285,12 @@ describe( 'E2E Clients', function () {
 
     } );
 
+    it( '9.1. should change name', function ( done ) {
+        
+        
+        
+    } );
+
     it( '10. should delete #2', function ( done ) {
 
         tpls.del(
@@ -284,7 +311,7 @@ describe( 'E2E Clients', function () {
 
     } );
 
-    it( 'should return error when passing to getOne empty id', function ( done ) {
+    it( '12. should return error when passing to getOne empty id', function ( done ) {
 
         tpls.getOne(
             '',
@@ -294,5 +321,7 @@ describe( 'E2E Clients', function () {
         );
 
     } );
+
+
 
 } );
