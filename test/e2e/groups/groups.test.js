@@ -127,6 +127,85 @@ var tpls = {
 
         } );
 
+    },
+
+    put: function ( id, newData, expectingError, done ) {
+
+        var documentToEdit, putResult, mergeResult,
+
+            url = '/groups/' + id;
+
+        async.series( [
+
+            // get document to edit
+            function ( scb ) {
+
+                restifyClient.get( url, function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+                    documentToEdit = data;
+                    scb();
+
+                } );
+
+            },
+
+            // update document
+            function ( scb ) {
+
+                mergeResult = Object.merge(
+                    documentToEdit,
+                    newData
+                );
+
+                restifyClient.put( url, newData, function ( err, req, res, data ) {
+
+                    if ( expectingError ) {
+                        should.exist( err );
+                        done();
+                    } else {
+                        should.not.exist( err );
+                    }
+
+                    putResult = data;
+
+                    Object.each( data, function ( field ) {
+
+                        if ( field != '_id' && field != '__v' ) {
+                            data[ field ].should.eql( mergeResult[ field ] );
+                        }
+
+                    } );
+
+                    scb();
+
+                } );
+
+            },
+
+            // check changes
+            function ( scb ) {
+
+                restifyClient.get( url, function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+
+                    Object.each( data, function ( field ) {
+
+                        if ( field != '_id' && field != '__v' ) {
+                            data[ field ].should.eql( mergeResult[ field ] );
+                        }
+
+                    } );
+
+                    scb();
+
+                } );
+
+            }
+
+        ], done );
+
     }
 
 };
@@ -259,6 +338,32 @@ describe( 'E2E Groups', function () {
         tpls.get(
             [ 'Group 2' ],
             false,
+            done
+        );
+
+    } );
+
+    it( '9.1. should change name of #2', function ( done ) {
+
+        tpls.put(
+            postedIds[ 'Group 2' ],
+            {
+                name: 'New Group 2'
+            },
+            false,
+            done
+        );
+
+    } );
+
+    it( '9.2. should not remove name', function ( done ) {
+
+        tpls.put(
+            postedIds[ 'Group 2' ],
+            {
+                name: null
+            },
+            true,
             done
         );
 

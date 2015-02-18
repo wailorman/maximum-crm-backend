@@ -94,7 +94,49 @@ var deleteGroupRoute = function ( req, res, next ) {
 
 };
 
+var putGroupRoute = function ( req, res, next ) {
+
+    try {
+        var id = new ObjectId( req.params.id );
+    }
+    catch (e) {
+        return next( new restify.InvalidArgumentError( "Invalid id" ) );
+    }
+
+    // object for merge with original document
+
+    delete req.body._id; // ignore private fields
+    delete req.body.__v;
+
+    // find document
+
+    GroupModel
+        .findOne( { _id: id } )
+        .exec( function ( err, group ) {
+
+            if ( err ) return next( err );
+
+            if ( ! group ) return next( new restify.ResourceNotFoundError( "Can't find group with such id" ) );
+
+            // start merging changes
+
+            Object.merge( group, req.body );
+
+            group.increment();
+            group.save( function ( err, group ) {
+
+                if ( err ) return next( err );
+                res.send( 200, group );
+                return next();
+
+            } );
+
+        } );
+
+};
+
 module.exports.getOneGroupRoute = getOneGroupRoute;
 module.exports.getGroupsRoute = getGroupsRoute;
 module.exports.createGroupRoute = createGroupRoute;
 module.exports.deleteGroupRoute = deleteGroupRoute;
+module.exports.putGroupRoute = putGroupRoute;
