@@ -240,9 +240,9 @@ describe( 'E2E Clients', function () {
         cleanUp( done );
     } );
 
-    //after( function ( done ) {
-    //    cleanUp( done );
-    //} );
+    after( function ( done ) {
+        cleanUp( done );
+    } );
 
     it( '0. should return error if empty params in post', function ( done ) {
 
@@ -397,6 +397,115 @@ describe( 'E2E Clients', function () {
             true,
             done
         );
+
+    } );
+
+    describe( 'consists field', function () {
+
+        var groupsForTesting = [];
+        var clientForTesting;
+
+        // create groups for testing
+        before( function ( done ) {
+
+            async.times( 2, function ( n, tcb ) {
+
+                restifyClient.post(
+                    '/groups',
+                    { name: 'Test Group ' + n },
+                    function ( err, req, res, data ) {
+
+                        should.not.exist( err );
+                        groupsForTesting.add( data );
+                        tcb();
+
+                    }
+                );
+
+            }, done );
+
+        } );
+
+        it( 'should post client with consists field', function ( done ) {
+
+            restifyClient.post(
+                '/clients',
+                {
+                    name:     'Test Client',
+                    consists: [ groupsForTesting[ 0 ]._id, groupsForTesting[ 1 ]._id ]
+                },
+                function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+
+                    clientForTesting = data._id;
+                    data.consists.should.eql( [ groupsForTesting[ 0 ]._id, groupsForTesting[ 1 ]._id ] );
+
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'should remove consists field', function ( done ) {
+
+            restifyClient.put(
+                '/clients/' + clientForTesting,
+                {
+                    consists: null
+                },
+                function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+                    should.not.exist( data.consists );
+
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'should add consists field', function ( done ) {
+
+            restifyClient.put(
+                '/clients/' + clientForTesting,
+                {
+                    consists: [ groupsForTesting[ 0 ]._id ]
+                },
+                function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+
+                    data.consists.should.eql( [ groupsForTesting[ 0 ]._id ] );
+
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'should return error after passing nonexistent group', function ( done ) {
+
+            restifyClient.put(
+                '/clients/' + clientForTesting,
+                {
+                    consists: [ '00000000000000000000005a' ]
+                },
+                function ( err, req, res, data ) {
+
+                    should.exist( err );
+
+                    //err.should.match( /(00000000000000000000005a)/igm );
+
+                    done();
+
+                }
+            );
+
+        } );
 
     } );
 

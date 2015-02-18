@@ -11,9 +11,11 @@ var mongoose     = require( 'mongoose' ),
 var clientSchema = new Schema(
     {
         name: {
-            type: String,
+            type:     String,
             required: true
-        }
+        },
+
+        consists: [ Schema.Types.ObjectId ]
     },
     { collection: 'clients' }
 );
