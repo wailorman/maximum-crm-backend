@@ -94,7 +94,49 @@ var deleteCoachRoute = function ( req, res, next ) {
 
 };
 
+var putCoachRoute = function ( req, res, next ) {
+
+    try {
+        var id = new ObjectId( req.params.id );
+    }
+    catch (e) {
+        return next( new restify.InvalidArgumentError( "Invalid id" ) );
+    }
+
+    // object for merge with original document
+
+    delete req.body._id; // ignore private fields
+    delete req.body.__v;
+
+    // find document
+
+    CoachModel
+        .findOne( { _id: id } )
+        .exec( function ( err, coach ) {
+
+            if ( err ) return next( err );
+
+            if ( ! coach ) return next( new restify.ResourceNotFoundError( "Can't find coach with such id" ) );
+
+            // start merging changes
+
+            Object.merge( coach, req.body );
+
+            coach.increment();
+            coach.save( function ( err, coach ) {
+
+                if ( err ) return next( err );
+                res.send( 200, coach );
+                return next();
+
+            } );
+
+        } );
+
+};
+
 module.exports.getOneCoachRoute = getOneCoachRoute;
 module.exports.getCoachesRoute = getCoachesRoute;
 module.exports.createCoachRoute = createCoachRoute;
 module.exports.deleteCoachRoute = deleteCoachRoute;
+module.exports.putCoachRoute = putCoachRoute;
