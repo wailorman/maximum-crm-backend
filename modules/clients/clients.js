@@ -55,7 +55,7 @@ var createClientRoute = function ( req, res, next ) {
 
     newClientDocument.save( function ( err, doc ) {
 
-        if ( err ) return next( new restify.InternalError( "Mongo write: " + err.message ) );
+        if ( err ) return next( new restify.InternalError( "Mongo write: " + err ) );
 
         res.send( 200, doc );
         return next();
@@ -70,7 +70,7 @@ var deleteClientRoute = function ( req, res, next ) {
         var id = new ObjectId( req.params.id );
     }
     catch (e) {
-        return next( new restify.InvalidArgumentError( "Invalid id: " + err.message ) );
+        return next( new restify.InvalidArgumentError( "Invalid id" ) );
     }
 
     ClientModel
@@ -94,7 +94,49 @@ var deleteClientRoute = function ( req, res, next ) {
 
 };
 
+var putClientRoute = function ( req, res, next ) {
+
+    try {
+        var id = new ObjectId( req.params.id );
+    }
+    catch (e) {
+        return next( new restify.InvalidArgumentError( "Invalid id" ) );
+    }
+    
+    // object for merge with original document
+
+    delete req.body._id; // ignore private fields
+    delete req.body.__v;
+    
+    // find document
+
+    ClientModel
+        .findOne( { _id: id } )
+        .exec( function ( err, client ) {
+            
+            if ( err ) return next( err );
+            
+            if ( ! client ) return next( new restify.ResourceNotFoundError( "Can't find client with such id" ) );
+
+            // start merging changes
+
+            Object.merge( client, req.body );
+
+            client.increment();
+            client.save( function ( err, client ) {
+
+                if ( err ) return next( err );
+                res.send( 200, client );
+                return next();
+
+            } );
+            
+        } );
+    
+};
+
 module.exports.getOneClientRoute = getOneClientRoute;
 module.exports.getClientsRoute = getClientsRoute;
 module.exports.createClientRoute = createClientRoute;
 module.exports.deleteClientRoute = deleteClientRoute;
+module.exports.putClientRoute = putClientRoute;

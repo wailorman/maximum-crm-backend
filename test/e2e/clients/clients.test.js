@@ -1,12 +1,12 @@
-var should     = require( 'should' ),
-    sugar      = require( 'sugar' ),
-    async      = require( 'async' ),
-    restify    = require( 'restify' ),
-    mongoose   = require( 'mongoose' ),
+var should      = require( 'should' ),
+    sugar       = require( 'sugar' ),
+    async       = require( 'async' ),
+    restify     = require( 'restify' ),
+    mongoose    = require( 'mongoose' ),
     ClientModel = require( '../../../models/client.js' );
 
 var restifyClient = restify.createJsonClient( {
-    url: 'http://localhost:21080/',
+    url:     'http://localhost:21080/',
     version: '*'
 } );
 
@@ -129,24 +129,82 @@ var tpls = {
 
     },
 
-    // @todo
-    put: function ( id, params, expectingError, done ) {
+    put: function ( id, newData, expectingError, done ) {
 
-        restifyClient.put( '/clients/'+id, params, function ( err, req, res, data ) {
+        var documentToEdit, putResult, mergeResult,
 
-            if ( expectingError ) {
-                should.exist( err );
-                done();
+            url = '/clients/' + id;
+
+        async.series( [
+
+            // get document to edit
+            function ( scb ) {
+
+                restifyClient.get( url, function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+                    documentToEdit = data;
+                    scb();
+
+                } );
+
+            },
+
+            // update document
+            function ( scb ) {
+
+                mergeResult = Object.merge(
+                    documentToEdit,
+                    newData
+                );
+
+                restifyClient.put( url, newData, function ( err, req, res, data ) {
+
+                    if ( expectingError ) {
+                        should.exist( err );
+                        done();
+                    } else {
+                        should.not.exist( err );
+                    }
+
+                    putResult = data;
+
+                    Object.each( data, function ( field ) {
+
+                        if ( field != '_id' && field != '__v' ) {
+                            data[ field ].should.eql( mergeResult[ field ] );
+                        }
+
+                    } );
+
+                    scb();
+
+                } );
+
+            },
+
+            // check changes
+            function ( scb ) {
+
+                restifyClient.get( url, function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+
+                    Object.each( data, function ( field ) {
+
+                        if ( field != '_id' && field != '__v' ) {
+                            data[ field ].should.eql( mergeResult[ field ] );
+                        }
+
+                    } );
+
+                    scb();
+
+                } );
+
             }
 
-            should.not.exist( err );
-            should.exist( data );
-
-            data.should.eql( 'Client was deleted!' );
-
-            done();
-
-        } );
+        ], done );
 
     }
 
@@ -182,9 +240,9 @@ describe( 'E2E Clients', function () {
         cleanUp( done );
     } );
 
-    after( function ( done ) {
-        cleanUp( done );
-    } );
+    //after( function ( done ) {
+    //    cleanUp( done );
+    //} );
 
     it( '0. should return error if empty params in post', function ( done ) {
 
@@ -285,10 +343,30 @@ describe( 'E2E Clients', function () {
 
     } );
 
-    it( '9.1. should change name', function ( done ) {
-        
-        
-        
+    it( '9.1. should change name of #2', function ( done ) {
+
+        tpls.put(
+            postedIds[ 'Client 2' ],
+            {
+                name: 'New Client 2'
+            },
+            false,
+            done
+        );
+
+    } );
+
+    it( '9.2. should not remove name', function ( done ) {
+
+        tpls.put(
+            postedIds[ 'Client 2' ],
+            {
+                name: null
+            },
+            true,
+            done
+        );
+
     } );
 
     it( '10. should delete #2', function ( done ) {
@@ -321,7 +399,6 @@ describe( 'E2E Clients', function () {
         );
 
     } );
-
 
 
 } );
