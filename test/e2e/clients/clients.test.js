@@ -507,6 +507,26 @@ describe( 'E2E Clients', function () {
 
         } );
 
+        it( 'should return error when consists is not an array', function ( done ) {
+
+            restifyClient.put(
+                '/clients/' + clientForTesting,
+                {
+                    consists: groupsForTesting[ 0 ]._id
+                },
+                function ( err, req, res, data ) {
+
+                    should.exist( err );
+
+                    //err.should.match( /(00000000000000000000005a)/igm );
+
+                    done();
+
+                }
+            );
+
+        } );
+
     } );
 
 
