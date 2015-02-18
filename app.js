@@ -22,21 +22,25 @@ server.get( '/coaches', coachesModule.getCoachesRoute );
 server.get( '/coaches/:id', coachesModule.getOneCoachRoute );
 server.post( '/coaches', coachesModule.createCoachRoute );
 server.del( '/coaches/:id', coachesModule.deleteCoachRoute );
+server.put( '/coaches/:id', coachesModule.putCoachRoute );
 
 server.get( '/clients', clientsModule.getClientsRoute );
 server.get( '/clients/:id', clientsModule.getOneClientRoute );
 server.post( '/clients', clientsModule.createClientRoute );
 server.del( '/clients/:id', clientsModule.deleteClientRoute );
+server.put( '/clients/:id', clientsModule.putClientRoute );
 
 server.get( '/groups', groupsModule.getGroupsRoute );
 server.get( '/groups/:id', groupsModule.getOneGroupRoute );
 server.post( '/groups', groupsModule.createGroupRoute );
 server.del( '/groups/:id', groupsModule.deleteGroupRoute );
+server.put( '/groups/:id', groupsModule.putGroupRoute );
 
 server.get( '/halls', hallsModule.getHallsRoute );
 server.get( '/halls/:id', hallsModule.getOneHallRoute );
 server.post( '/halls', hallsModule.createHallRoute );
 server.del( '/halls/:id', hallsModule.deleteHallRoute );
+server.put( '/halls/:id', hallsModule.putHallRoute );
 
 
 server.listen( 21080, function () {
