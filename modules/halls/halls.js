@@ -94,7 +94,49 @@ var deleteHallRoute = function ( req, res, next ) {
 
 };
 
+var putHallRoute = function ( req, res, next ) {
+
+    try {
+        var id = new ObjectId( req.params.id );
+    }
+    catch (e) {
+        return next( new restify.InvalidArgumentError( "Invalid id" ) );
+    }
+
+    // object for merge with original document
+
+    delete req.body._id; // ignore private fields
+    delete req.body.__v;
+
+    // find document
+
+    HallModel
+        .findOne( { _id: id } )
+        .exec( function ( err, hall ) {
+
+            if ( err ) return next( err );
+
+            if ( ! hall ) return next( new restify.ResourceNotFoundError( "Can't find hall with such id" ) );
+
+            // start merging changes
+
+            Object.merge( hall, req.body );
+
+            hall.increment();
+            hall.save( function ( err, hall ) {
+
+                if ( err ) return next( err );
+                res.send( 200, hall );
+                return next();
+
+            } );
+
+        } );
+
+};
+
 module.exports.getOneHallRoute = getOneHallRoute;
 module.exports.getHallsRoute = getHallsRoute;
 module.exports.createHallRoute = createHallRoute;
 module.exports.deleteHallRoute = deleteHallRoute;
+module.exports.putHallRoute = putHallRoute;
