@@ -5,7 +5,8 @@ var restify       = require( 'restify' ),
     coachesModule = require( './modules/coaches/coaches.js' ),
     clientsModule = require( './modules/clients/clients.js' ),
     hallsModule   = require( './modules/halls/halls.js' ),
-    groupsModule  = require( './modules/groups/groups.js' );
+    groupsModule  = require( './modules/groups/groups.js' ),
+    lessonsModule = require( './modules/lessons/lessons.js' );
 
 mongoose.connect( 'mongodb://mongo.local/maximum-crm' );
 
@@ -42,6 +43,11 @@ server.post( '/halls', hallsModule.createHallRoute );
 server.del( '/halls/:id', hallsModule.deleteHallRoute );
 server.put( '/halls/:id', hallsModule.putHallRoute );
 
+server.get( '/lessons', lessonsModule.getLessonsRoute );
+server.get( '/lessons/:id', lessonsModule.getOneLessonRoute );
+server.post( '/lessons', lessonsModule.createLessonRoute );
+server.del( '/lessons/:id', lessonsModule.deleteLessonRoute );
+server.put( '/lessons/:id', lessonsModule.updateLessonRoute );
 
 server.listen( 21080, function () {
     console.log( 'Maximum CRM REST API server started on port 21080' );
