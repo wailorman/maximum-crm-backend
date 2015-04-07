@@ -3,10 +3,15 @@
   "version": "0.0.1",
   "dependencies": {
     "async": "^0.9.0",
-    "express": "~4.9.0",
-    "mongodb": "^1.4.19",
+    "express": "^4.9.8",
+    "mongodb": "^1.4.35",
     "mongoose": "^3.8.18",
-    "restify": "~2.8.3"
+    "passport": "^0.2.1",
+    "passport-local": "^1.0.0",
+    "password-hash": "^1.2.2",
+    "rand-token": "^0.2.1",
+    "restify": "^2.8.5",
+    "sugar": "^1.4.1"
   },
   "devDependencies": {
     "mocha": "^2.0.1",
