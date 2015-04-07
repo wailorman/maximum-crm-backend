@@ -8,45 +8,36 @@ var restify = require( 'restify' ),
     groupsModule = require( './modules/groups/groups.js' ),
     lessonsModule = require( './modules/lessons/lessons.js' );
 
-mongoose.connect( 'mongodb://mongo.local/maximum-crm' );
+/*
 
-// @todo Rewrite update algorithm to lessons module like
+ #!/bin/bash
 
+ docker pull wailorman/snailkick-chat-backend:dev
 
-function unknownMethodHandler(req, res) {
-    if (req.method.toLowerCase() === 'options') {
-        console.log('received an options method request');
-        var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
+ docker kill snail-back && docker rm snail-back
 
-        if (res.methods.indexOf('OPTIONS') === -1) res.methods.push('OPTIONS');
-        if (res.methods.indexOf('DELETE') === -1) res.methods.push('DELETE');
+ docker run -d --name snail-back -p 1515:1515 -e MONGO_HOST=snail:0EE49UjarK@ds037601.mongolab.com:37601 wailorman/snailkick-chat-backend:dev
 
-        res.header('Access-Control-Allow-Credentials', true);
-        res.header('Access-Control-Allow-Headers', allowHeaders.join(', '));
-        res.header('Access-Control-Allow-Methods', res.methods.join(', '));
-        res.header('Access-Control-Allow-Origin', req.headers.origin);
+* */
 
-        return res.send(200);
-    }
-    else
-        return res.send(new restify.MethodNotAllowedError());
+var mongoHost;
+
+/** @namespace process.env.MONGO_HOST */
+if (process.env.MONGO_HOST) {
+    mongoHost = 'mongodb://' + process.env.MONGO_HOST + '/maximum-crm';
+} else {
+    mongoHost = 'mongodb://localhost/maximum-crm';
 }
 
-server.on('MethodNotAllowed', unknownMethodHandler);
+console.log( 'Connecting to MongoDB server: ' + mongoHost );
+
+mongoose.connect( mongoHost );
 
 
 server.use( restify.queryParser() );
 server.use( restify.bodyParser() );
 server.use( restify.fullResponse() );
 
-//server.use( function ( req, res, next ) {
-//
-//    if ( req.method === 'OPTIONS' ){
-//        res.methods.push( 'PUT' );
-//        res.send( 204 );
-//    }
-//    return next();
-//} );
 
 server.get( '/accounts/:query', localAuth.findAccountByTokenRoute );
 server.get( '/accounts/:username/token', localAuth.authRoute );
@@ -82,6 +73,31 @@ server.post( '/lessons', lessonsModule.createLessonRoute );
 server.del( '/lessons/:id', lessonsModule.deleteLessonRoute );
 server.put( '/lessons/:id', lessonsModule.updateLessonRoute );
 
+
+function unknownMethodHandler( req, res ) {
+    if (req.method.toLowerCase() === 'options') {
+        console.log( 'received an options method request' );
+        var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
+
+        if (res.methods.indexOf( 'OPTIONS' ) === -1) res.methods.push( 'OPTIONS' );
+        if (res.methods.indexOf( 'DELETE' ) === -1) res.methods.push( 'DELETE' );
+
+        res.header( 'Access-Control-Allow-Credentials', true );
+        res.header( 'Access-Control-Allow-Headers', allowHeaders.join( ', ' ) );
+        res.header( 'Access-Control-Allow-Methods', res.methods.join( ', ' ) );
+        res.header( 'Access-Control-Allow-Origin', req.headers.origin );
+
+        return res.send( 200 );
+    }
+    else
+        return res.send( new restify.MethodNotAllowedError() );
+}
+
+server.on( 'MethodNotAllowed', unknownMethodHandler );
+
+
 server.listen( 21080, function () {
     console.log( 'Maximum CRM REST API server started on port 21080' );
 } );
+
+
