@@ -73,8 +73,6 @@ var getLessonsRoute = function ( req, res, next ) {
 
             if ( err ) return next( new restify.InternalError( "Mongo find: " + err ) );
 
-            if ( lessons.length == 0 ) return next( new restify.ResourceNotFoundError( "No lessons" ) );
-
             res.send( 200, lessons );
             next();
 

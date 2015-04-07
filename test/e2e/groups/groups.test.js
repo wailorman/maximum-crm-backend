@@ -19,8 +19,9 @@ var tpls = {
      * @param {object} params
      * @param {boolean} expectingError
      * @param done
+     * @param callback
      */
-    post: function ( params, expectingError, done ) {
+    post: function ( params, expectingError, done, callback ) {
 
         restifyClient.post( '/groups', params, function ( err, req, res, data ) {
 
@@ -39,7 +40,8 @@ var tpls = {
 
             postedIds[ params.name ] = data._id;
 
-            done();
+            if ( callback ) callback( err, req, res, data );
+            else done();
 
         } );
 
@@ -51,8 +53,9 @@ var tpls = {
      * @param {string} expectedName
      * @param {boolean} expectingError
      * @param done
+     * @param callback
      */
-    getOne: function ( id, expectedName, expectingError, done ) {
+    getOne: function ( id, expectedName, expectingError, done, callback ) {
 
         restifyClient.get( '/groups/' + id, function ( err, req, res, data ) {
 
@@ -67,7 +70,8 @@ var tpls = {
             data._id.should.eql( id );
             data.name.should.eql( expectedName );
 
-            done();
+            if ( callback ) callback( err, req, res, data );
+            else done();
 
         } );
 
@@ -78,8 +82,9 @@ var tpls = {
      * @param {Array} expectedNames
      * @param {boolean} expectingError
      * @param done
+     * @param callback
      */
-    get: function ( expectedNames, expectingError, done ) {
+    get: function ( expectedNames, expectingError, done, callback ) {
 
         restifyClient.get( '/groups', function ( err, req, res, data ) {
 
@@ -97,7 +102,8 @@ var tpls = {
 
             } );
 
-            done();
+            if ( callback ) callback( err, req, res, data );
+            else done();
 
         } );
 
@@ -108,8 +114,9 @@ var tpls = {
      * @param {string} id
      * @param {boolean} expectingError
      * @param done
+     * @param callback
      */
-    del: function ( id, expectingError, done ) {
+    del: function ( id, expectingError, done, callback ) {
 
         restifyClient.del( '/groups/' + id, function ( err, req, res, data ) {
 
@@ -123,15 +130,16 @@ var tpls = {
 
             data.should.eql( 'Group was deleted!' );
 
-            done();
+            if ( callback ) callback( err, req, res, data );
+            else done();
 
         } );
 
     },
 
-    put: function ( id, newData, expectingError, done ) {
+    put: function ( id, newData, expectingError, done, callback ) {
 
-        var documentToEdit, putResult, mergeResult,
+        var documentToEdit, putResult, mergeResult, callbackParams = {},
 
             url = '/groups/' + id;
 
@@ -159,6 +167,13 @@ var tpls = {
                 );
 
                 restifyClient.put( url, newData, function ( err, req, res, data ) {
+
+                    callbackParams = {
+                        err: err,
+                        req: req,
+                        res: res,
+                        data: data
+                    };
 
                     if ( expectingError ) {
                         should.exist( err );
@@ -204,7 +219,12 @@ var tpls = {
 
             }
 
-        ], done );
+        ], function ( err ) {
+
+            if ( callback ) callback( callbackParams.err, callbackParams.req, callbackParams.res, callbackParams.data );
+            else done( err );
+
+        } );
 
     }
 
@@ -379,12 +399,18 @@ describe( 'E2E Groups', function () {
 
     } );
 
-    it( '11. should get all groups and return 404', function ( done ) {
+    it( '11. should get all groups and return 200', function ( done ) {
 
         tpls.get(
             [],
-            true,
-            done
+            false,
+            null,
+            function ( err, req, res, data ) {
+
+                res.statusCode.should.eql( 200 );
+                done();
+
+            }
         );
 
     } );
