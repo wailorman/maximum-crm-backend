@@ -6,6 +6,11 @@ var restify    = require( 'restify' ),
 
     GroupModel = require( '../../models/group.js' );
 
+// @todo /groups/:id/members
+
+// @todo periodicity
+// @todo study cost
+
 var getOneGroupRoute = function ( req, res, next ) {
 
     try {

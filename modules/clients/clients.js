@@ -7,6 +7,9 @@ var restify     = require( 'restify' ),
     ClientModel = require( '../../models/client.js' ),
     GroupModel  = require( '../../models/group.js' );
 
+// @todo /clients/:id/invite-to-group?group=<>
+// @todo /clients/:id/coaches
+
 var getOneClientRoute = function ( req, res, next ) {
 
     try {

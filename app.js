@@ -1,19 +1,52 @@
-var restify       = require( 'restify' ),
-    server        = restify.createServer(),
-    mongoose      = require( 'mongoose' ),
-    localAuth     = require( './modules/auth/local.js' ),
+var restify = require( 'restify' ),
+    server = restify.createServer(),
+    mongoose = require( 'mongoose' ),
+    localAuth = require( './modules/auth/local.js' ),
     coachesModule = require( './modules/coaches/coaches.js' ),
     clientsModule = require( './modules/clients/clients.js' ),
-    hallsModule   = require( './modules/halls/halls.js' ),
-    groupsModule  = require( './modules/groups/groups.js' ),
+    hallsModule = require( './modules/halls/halls.js' ),
+    groupsModule = require( './modules/groups/groups.js' ),
     lessonsModule = require( './modules/lessons/lessons.js' );
 
 mongoose.connect( 'mongodb://mongo.local/maximum-crm' );
 
+// @todo Rewrite update algorithm to lessons module like
+
+
+function unknownMethodHandler(req, res) {
+    if (req.method.toLowerCase() === 'options') {
+        console.log('received an options method request');
+        var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
+
+        if (res.methods.indexOf('OPTIONS') === -1) res.methods.push('OPTIONS');
+        if (res.methods.indexOf('DELETE') === -1) res.methods.push('DELETE');
+
+        res.header('Access-Control-Allow-Credentials', true);
+        res.header('Access-Control-Allow-Headers', allowHeaders.join(', '));
+        res.header('Access-Control-Allow-Methods', res.methods.join(', '));
+        res.header('Access-Control-Allow-Origin', req.headers.origin);
+
+        return res.send(200);
+    }
+    else
+        return res.send(new restify.MethodNotAllowedError());
+}
+
+server.on('MethodNotAllowed', unknownMethodHandler);
+
 
 server.use( restify.queryParser() );
 server.use( restify.bodyParser() );
-server.use( restify.CORS() );
+server.use( restify.fullResponse() );
+
+//server.use( function ( req, res, next ) {
+//
+//    if ( req.method === 'OPTIONS' ){
+//        res.methods.push( 'PUT' );
+//        res.send( 204 );
+//    }
+//    return next();
+//} );
 
 server.get( '/accounts/:query', localAuth.findAccountByTokenRoute );
 server.get( '/accounts/:username/token', localAuth.authRoute );
@@ -43,7 +76,7 @@ server.post( '/halls', hallsModule.createHallRoute );
 server.del( '/halls/:id', hallsModule.deleteHallRoute );
 server.put( '/halls/:id', hallsModule.putHallRoute );
 
-server.get( '/lessons', lessonsModule.getLessonsRoute );
+server.get( '/lessons/', lessonsModule.getLessonsRoute );
 server.get( '/lessons/:id', lessonsModule.getOneLessonRoute );
 server.post( '/lessons', lessonsModule.createLessonRoute );
 server.del( '/lessons/:id', lessonsModule.deleteLessonRoute );

@@ -120,7 +120,7 @@ var putCoachRoute = function ( req, res, next ) {
 
             // start merging changes
 
-            Object.merge( coach, req.body );
+            Object.merge( coach, req.body, true );
 
             coach.increment();
             coach.save( function ( err, coach ) {

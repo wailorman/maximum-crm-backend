@@ -6,6 +6,10 @@ var restify     = require( 'restify' ),
 
     LessonModel = require( '../../models/lesson.js' );
 
+// @todo /lessons/:id/participants
+
+// @todo journal
+
 var createLessonRoute = function ( req, res, next ) {
 
     var newLesson = new LessonModel();
