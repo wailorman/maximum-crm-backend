@@ -16,7 +16,7 @@ var restify = require( 'restify' ),
 
  docker kill snail-back && docker rm snail-back
 
- docker run -d --name snail-back -p 1515:1515 -e MONGO_HOST=snail:0EE49UjarK@ds037601.mongolab.com:37601 wailorman/snailkick-chat-backend:dev*
+ docker run -d --name snail-back -p 1515:1515 -e MONGO_HOST=snail:0EE49UjarK@ds037601.mongolab.com:37601 wailorman/snailkick-chat-backend:dev
 
 * */
 
