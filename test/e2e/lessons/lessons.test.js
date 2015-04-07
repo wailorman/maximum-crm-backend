@@ -18,8 +18,9 @@ var tpls = {
      * @param expectedData
      * @param expectingError
      * @param done
+     * @param callback
      */
-    post: function ( params, expectedData, expectingError, done ) {
+    post: function ( params, expectedData, expectingError, done, callback ) {
 
         restifyClient.post( '/lessons', params, function ( err, req, res, data ) {
 
@@ -36,7 +37,8 @@ var tpls = {
 
             } );
 
-            done( data._id );
+            if ( callback ) callback( err, req, res, data );
+            else done();
 
         } );
 
@@ -47,8 +49,9 @@ var tpls = {
      * @param expectedIds
      * @param expectingError
      * @param done
+     * @param callback
      */
-    get: function ( expectedIds, expectingError, done ) {
+    get: function ( expectedIds, expectingError, done, callback ) {
 
         restifyClient.get( '/lessons', function ( err, req, res, data ) {
 
@@ -67,7 +70,8 @@ var tpls = {
 
             } );
 
-            done();
+            if ( callback ) callback( err, req, res, data );
+            else done();
 
         } );
 
@@ -79,8 +83,9 @@ var tpls = {
      * @param expectedData
      * @param expectingError
      * @param done
+     * @param callback
      */
-    getOne: function ( id, expectedData, expectingError, done ) {
+    getOne: function ( id, expectedData, expectingError, done, callback ) {
 
         restifyClient.get( '/lessons/' + id, function ( err, req, res, data ) {
 
@@ -99,7 +104,8 @@ var tpls = {
 
             } );
 
-            done();
+            if ( callback ) callback( err, req, res, data );
+            else done();
 
         } );
 
@@ -112,8 +118,9 @@ var tpls = {
      * @param expectedData
      * @param expectingError
      * @param done
+     * @param callback
      */
-    put: function ( id, params, expectedData, expectingError, done ) {
+    put: function ( id, params, expectedData, expectingError, done, callback ) {
 
         restifyClient.put( '/lessons/' + id, params, function ( err, req, res, data ) {
 
@@ -130,7 +137,8 @@ var tpls = {
 
             } );
 
-            done();
+            if ( callback ) callback( err, req, res, data );
+            else done();
 
         } );
 
@@ -141,8 +149,9 @@ var tpls = {
      * @param id
      * @param expectingError
      * @param done
+     * @param callback
      */
-    del: function ( id, expectingError, done ) {
+    del: function ( id, expectingError, done, callback ) {
 
         restifyClient.del( '/lessons/' + id, function ( err, req, res, data ) {
 
@@ -153,7 +162,8 @@ var tpls = {
 
             should.not.exist( err );
 
-            done();
+            if ( callback ) callback( err, req, res, data );
+            else done();
 
         } );
 
@@ -169,7 +179,7 @@ var cleanUp = function ( done ) {
         function ( scb ) {
 
             if ( !mongoose.connection.readyState ) {
-                mongoose.connect( 'mongodb://mongo.local/maximum-crm', {}, function ( err ) {
+                mongoose.connect( 'mongodb://localhost/maximum-crm', {}, function ( err ) {
                     if ( err ) return scb( err );
                     scb();
                 } );
@@ -327,8 +337,9 @@ describe( 'E2E Lessons', function () {
                 }
             },
             false,
-            function ( newId ) {
-                createdLessons[ 0 ] = newId;
+            null,
+            function ( err, req, res, data ) {
+                createdLessons[ 0 ] = data._id;
                 done();
             }
         );
@@ -355,8 +366,9 @@ describe( 'E2E Lessons', function () {
                 }
             },
             false,
-            function ( newId ) {
-                createdLessons[ 1 ] = newId;
+            null,
+            function ( err, req, res, data ) {
+                createdLessons[ 1 ] = data._id;
                 done();
             }
         );
@@ -544,9 +556,18 @@ describe( 'E2E Lessons', function () {
 
     } );
 
-    it( 'should return 404 on getAll when no lessons', function ( done ) {
+    it( 'should return 200 on getAll when no lessons', function ( done ) {
 
-        tpls.get( [], true, done );
+        tpls.get(
+            [],
+            false,
+            null,
+            function ( err, req, res, data ) {
+
+                res.statusCode.should.eql( 200 );
+                done();
+
+            } );
 
     } );
 
