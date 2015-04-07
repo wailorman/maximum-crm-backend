@@ -38,8 +38,6 @@ var getHallsRoute = function ( req, res, next ) {
 
             if ( err ) return next( new restify.InternalError( "Mongo find: " + err.message ) );
 
-            if ( docs.length == 0 ) return next( new restify.ResourceNotFoundError( "No halls was find" ) );
-
             res.send( 200, docs );
             return next();
 
