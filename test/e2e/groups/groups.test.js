@@ -19,7 +19,7 @@ var tpls = {
      * @param {object} params
      * @param {boolean} expectingError
      * @param done
-     * @param callback
+     * @param [callback]
      */
     post: function ( params, expectingError, done, callback ) {
 
@@ -53,7 +53,7 @@ var tpls = {
      * @param {string} expectedName
      * @param {boolean} expectingError
      * @param done
-     * @param callback
+     * @param [callback]
      */
     getOne: function ( id, expectedName, expectingError, done, callback ) {
 
@@ -82,7 +82,7 @@ var tpls = {
      * @param {Array} expectedNames
      * @param {boolean} expectingError
      * @param done
-     * @param callback
+     * @param [callback]
      */
     get: function ( expectedNames, expectingError, done, callback ) {
 
@@ -114,7 +114,7 @@ var tpls = {
      * @param {string} id
      * @param {boolean} expectingError
      * @param done
-     * @param callback
+     * @param [callback]
      */
     del: function ( id, expectingError, done, callback ) {
 
@@ -137,6 +137,14 @@ var tpls = {
 
     },
 
+    /**
+     *
+     * @param id
+     * @param newData
+     * @param expectingError
+     * @param done
+     * @param [callback]
+     */
     put: function ( id, newData, expectingError, done, callback ) {
 
         var documentToEdit, putResult, mergeResult, callbackParams = {},
@@ -405,7 +413,7 @@ describe( 'E2E Groups', function () {
             [],
             false,
             null,
-            function ( err, req, res, data ) {
+            function ( err, req, res ) {
 
                 res.statusCode.should.eql( 200 );
                 done();
@@ -423,6 +431,38 @@ describe( 'E2E Groups', function () {
             true,
             done
         );
+
+    } );
+
+    describe( 'consists field', function () {
+
+        describe( 'can be', function () {
+
+            it( 'empty' );
+
+            it( 'empty array' );
+
+            it( '1 existent group' );
+
+            it( '2 existent' );
+
+        } );
+
+        describe( 'can not be', function () {
+
+            it( 'not ObjectId items' );
+
+            it( 'nonexistent group' );
+
+            it( '1 existent, 1 nonexistent' );
+
+            it( 'string' );
+
+            it( 'number' );
+
+            it( 'duplicate group ids' );
+
+        } );
 
     } );
 
