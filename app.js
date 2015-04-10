@@ -39,6 +39,13 @@ server.use( restify.bodyParser() );
 server.use( restify.fullResponse() );
 
 
+server.use( function ( req, res, next ) {
+
+    res.charSet('UTF-8');
+    return next();
+
+} );
+
 server.get( '/accounts/:query', localAuth.findAccountByTokenRoute );
 server.get( '/accounts/:username/token', localAuth.authRoute );
 server.post( '/accounts', localAuth.registerRoute );
@@ -77,7 +84,14 @@ server.put( '/lessons/:id', lessonsModule.updateLessonRoute );
 function unknownMethodHandler( req, res ) {
     if (req.method.toLowerCase() === 'options') {
         console.log( 'received an options method request' );
-        var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
+        var allowHeaders = [
+            'Accept',
+            'Accept-Version',
+            'Content-Type',
+            'Api-Version',
+            'Origin',
+            'X-Requested-With'
+        ];
 
         if (res.methods.indexOf( 'OPTIONS' ) === -1) res.methods.push( 'OPTIONS' );
         if (res.methods.indexOf( 'DELETE' ) === -1) res.methods.push( 'DELETE' );
