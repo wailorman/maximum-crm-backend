@@ -116,6 +116,8 @@ var deleteClientRoute = function ( req, res, next ) {
 
 var validateConsists = function ( consistsArray, next ) {
 
+    var consistsMirror = [];
+
     if ( !consistsArray ) return next(); // consists can be empty
 
     if ( !(consistsArray instanceof Array) ) return next( new restify.InvalidArgumentError( "`consists` path should be an array" ) );
@@ -124,18 +126,26 @@ var validateConsists = function ( consistsArray, next ) {
         consistsArray,
         function ( groupStrId, ecb ) {
 
+            // check duplicate id
+            if ( consistsMirror.find( groupStrId ) ) {
+                return ecb( new restify.InvalidArgumentError( "Group id duplicate in consists field" ) );
+            } else {
+                consistsMirror.push( groupStrId );
+            }
+
+
             try {
                 var group = new ObjectId( groupStrId );
             }
             catch (e) {
-                ecb( new restify.InvalidArgumentError( "Invalid group id: " + groupStrId ) );
+                return ecb( new restify.InvalidArgumentError( "Invalid group id: " + groupStrId ) );
             }
 
             GroupModel.findOne( { _id: group }, function ( err, group ) {
 
-                if ( err ) return next( new restify.InternalError( "Mongo find: " + err ) );
+                if ( err ) return ecb( new restify.InternalError( "Mongo find: " + err ) );
 
-                if ( !group ) return next( new restify.InvalidArgumentError( "Can't find group with such id: " + groupStrId ) );
+                if ( !group ) return ecb( new restify.InvalidArgumentError( "Can't find group with such id: " + groupStrId ) );
 
                 ecb();
 
