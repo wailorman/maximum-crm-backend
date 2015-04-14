@@ -434,36 +434,4 @@ describe( 'E2E Groups', function () {
 
     } );
 
-    describe( 'consists field', function () {
-
-        describe( 'can be', function () {
-
-            it( 'empty' );
-
-            it( 'empty array' );
-
-            it( '1 existent group' );
-
-            it( '2 existent' );
-
-        } );
-
-        describe( 'can not be', function () {
-
-            it( 'not ObjectId items' );
-
-            it( 'nonexistent group' );
-
-            it( '1 existent, 1 nonexistent' );
-
-            it( 'string' );
-
-            it( 'number' );
-
-            it( 'duplicate group ids' );
-
-        } );
-
-    } );
-
 } );

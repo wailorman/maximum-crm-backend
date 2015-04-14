@@ -3,10 +3,11 @@ var should      = require( 'should' ),
     async       = require( 'async' ),
     restify     = require( 'restify' ),
     mongoose    = require( 'mongoose' ),
-    ClientModel = require( '../../../models/client.js' );
+    ClientModel = require( '../../../models/client.js' ),
+    GroupModel  = require( '../../../models/group.js' );
 
 var restifyClient = restify.createJsonClient( {
-    url:     'http://localhost:21080/',
+    url: 'http://localhost:21080/',
     version: '*'
 } );
 
@@ -19,7 +20,7 @@ var tpls = {
      * @param {object} params
      * @param {boolean} expectingError
      * @param done
-     * @param callback
+     * @param [callback]
      */
     post: function ( params, expectingError, done, callback ) {
 
@@ -53,7 +54,7 @@ var tpls = {
      * @param {string} expectedName
      * @param {boolean} expectingError
      * @param done
-     * @param callback
+     * @param [callback]
      */
     getOne: function ( id, expectedName, expectingError, done, callback ) {
 
@@ -82,7 +83,7 @@ var tpls = {
      * @param {Array} expectedNames
      * @param {boolean} expectingError
      * @param done
-     * @param callback
+     * @param [callback]
      */
     get: function ( expectedNames, expectingError, done, callback ) {
 
@@ -114,7 +115,7 @@ var tpls = {
      * @param {string} id
      * @param {boolean} expectingError
      * @param done
-     * @param callback
+     * @param [callback]
      */
     del: function ( id, expectingError, done, callback ) {
 
@@ -248,7 +249,11 @@ var cleanUp = function ( done ) {
 
         // cleanup collection
         function ( scb ) {
-            ClientModel.find().remove().exec( scb );
+
+            async.parallel( [
+                ClientModel.find().remove().exec,
+                GroupModel.find().remove().exec
+            ], scb );
         }
 
     ], done );
@@ -428,128 +433,230 @@ describe( 'E2E Clients', function () {
 
     describe( 'consists field', function () {
 
-        var groupsForTesting = [];
-        var clientForTesting;
+        var simpleGroups;
 
-        // create groups for testing
-        before( function ( done ) {
+        var consistsBeforeEach = function ( next ) {
+
+            async.series( [
+                function ( scb ) {
+
+                    cleanUp( scb );
+
+                },
+                function ( scb ) {
+
+                    createSimpleGroups( function ( simpleGroupIds ) {
+                        simpleGroups = simpleGroupIds;
+                        scb();
+                    } );
+
+                }
+            ], next );
+
+        };
+
+        /**
+         *
+         * @param next
+         */
+        var createSimpleGroups = function ( next ) {
+
+            var createdGroups = [];
 
             async.times( 2, function ( n, tcb ) {
 
-                restifyClient.post(
-                    '/groups',
-                    { name: 'Test Group ' + n },
-                    function ( err, req, res, data ) {
+                restifyClient.post( '/groups', { name: 'Simple Group ' + n }, function ( err, req, res, data ) {
 
-                        should.not.exist( err );
-                        groupsForTesting.add( data );
-                        tcb();
+                    res.statusCode.should.eql( 200 );
+                    createdGroups.push( data._id );
+                    tcb();
 
-                    }
-                );
+                } );
 
-            }, done );
+            }, function () {
+
+                next( createdGroups );
+
+            } );
+
+        };
+
+        /**
+         * Create Client for testing
+         *
+         * @param next
+         */
+        var createSimpleClient = function ( next ) {
+
+            restifyClient.post( '/clients', { name: 'Simple Client' }, function ( err, req, res, data ) {
+
+                res.statusCode.should.eql( 200 );
+                next( data._id );
+
+            } );
+
+        };
+
+        /**
+         * Test template for consists field for Client object
+         *
+         * @param {object} parameters
+         * @param {number} expectedStatusCode
+         * @param done
+         */
+        var consistsTestTpl = function ( parameters, expectedStatusCode, done ) {
+
+            // data, exceptedStatusCode
+
+            async.parallel( [
+
+                // test with POST request
+                function ( pcb ) {
+
+                    restifyClient.post( '/clients', parameters, function ( err, req, res, data ) {
+
+                        res.statusCode.should.eql( expectedStatusCode );
+
+                        if ( expectedStatusCode == 200 ) {
+
+                            data.name.should.eql( parameters.name );
+                            data.consists.should.eql( parameters.consists );
+
+                        }
+
+                        pcb();
+
+                    } );
+
+                },
+
+                // test with PUT request
+                function ( pcb ) {
+
+                    createSimpleClient( function ( idOfSimpleClient ) {
+
+                        restifyClient.put( '/clients/' + idOfSimpleClient, parameters, function ( err, req, res, data ) {
+
+                            res.statusCode.should.eql( expectedStatusCode );
+
+                            if ( expectedStatusCode == 200 ) {
+
+                                delete data._id;
+                                delete data.__v;
+
+                                data.name.should.eql( parameters.name );
+                                data.consists.should.eql( parameters.consists );
+
+                            }
+
+                            pcb();
+
+                        } );
+
+                    } );
+
+                }
+
+            ], done );
+
+        };
+
+
+        ////////////////////////////////////////////////////////////////////////////////////
+
+
+        beforeEach( consistsBeforeEach );
+
+        describe( 'can be', function () {
+
+            beforeEach( consistsBeforeEach );
+
+            it( 'empty array', function ( done ) {
+
+                consistsTestTpl( {
+                    name: 'Simple Client',
+                    consists: []
+                }, 200, done );
+
+            } );
+
+            it( '1 existent group', function ( done ) {
+
+                consistsTestTpl( {
+                    name: 'Simple Client',
+                    consists: [ simpleGroups[ 0 ] ]
+                }, 200, done );
+
+            } );
+
+            it( '2 existent', function ( done ) {
+
+                consistsTestTpl( {
+                    name: 'Simple Client',
+                    consists: [ simpleGroups[ 0 ], simpleGroups[ 1 ] ]
+                }, 200, done );
+
+            } );
 
         } );
 
-        it( 'should post client with consists field', function ( done ) {
+        describe( 'can not be', function () {
 
-            restifyClient.post(
-                '/clients',
-                {
-                    name:     'Test Client',
-                    consists: [ groupsForTesting[ 0 ]._id, groupsForTesting[ 1 ]._id ]
-                },
-                function ( err, req, res, data ) {
+            beforeEach( consistsBeforeEach );
 
-                    should.not.exist( err );
+            it( 'not ObjectId items', function ( done ) {
 
-                    clientForTesting = data._id;
-                    data.consists.should.eql( [ groupsForTesting[ 0 ]._id, groupsForTesting[ 1 ]._id ] );
+                consistsTestTpl( {
+                    name: 'Simple Client',
+                    consists: [ '234', '234sdn' ]
+                }, 409, done );
 
-                    done();
+            } );
 
-                }
-            );
+            it( 'nonexistent group', function ( done ) {
 
-        } );
+                consistsTestTpl( {
+                    name: 'Simple Client',
+                    consists: [ '000000000000000000000000' ]
+                }, 409, done );
 
-        it( 'should remove consists field', function ( done ) {
+            } );
 
-            restifyClient.put(
-                '/clients/' + clientForTesting,
-                {
-                    consists: null
-                },
-                function ( err, req, res, data ) {
+            it( '1 existent, 1 nonexistent', function ( done ) {
 
-                    should.not.exist( err );
-                    should.not.exist( data.consists );
+                consistsTestTpl( {
+                    name: 'Simple Client',
+                    consists: [ simpleGroups[ 0 ], '000000000000000000000000' ]
+                }, 409, done );
 
-                    done();
+            } );
 
-                }
-            );
+            it( 'string', function ( done ) {
 
-        } );
+                consistsTestTpl( {
+                    name: 'Simple Client',
+                    consists: 'string!'
+                }, 409, done );
 
-        it( 'should add consists field', function ( done ) {
+            } );
 
-            restifyClient.put(
-                '/clients/' + clientForTesting,
-                {
-                    consists: [ groupsForTesting[ 0 ]._id ]
-                },
-                function ( err, req, res, data ) {
+            it( 'number', function ( done ) {
 
-                    should.not.exist( err );
+                consistsTestTpl( {
+                    name: 'Simple Client',
+                    consists: 105488
+                }, 409, done );
 
-                    data.consists.should.eql( [ groupsForTesting[ 0 ]._id ] );
+            } );
 
-                    done();
+            it( 'duplicate group ids', function ( done ) {
 
-                }
-            );
+                consistsTestTpl( {
+                    name: 'Simple Client',
+                    consists: [ simpleGroups[ 0 ], simpleGroups[ 0 ] ]
+                }, 409, done );
 
-        } );
-
-        it( 'should return error after passing nonexistent group', function ( done ) {
-
-            restifyClient.put(
-                '/clients/' + clientForTesting,
-                {
-                    consists: [ '00000000000000000000005a' ]
-                },
-                function ( err, req, res, data ) {
-
-                    should.exist( err );
-
-                    //err.should.match( /(00000000000000000000005a)/igm );
-
-                    done();
-
-                }
-            );
-
-        } );
-
-        it( 'should return error when consists is not an array', function ( done ) {
-
-            restifyClient.put(
-                '/clients/' + clientForTesting,
-                {
-                    consists: groupsForTesting[ 0 ]._id
-                },
-                function ( err, req, res, data ) {
-
-                    should.exist( err );
-
-                    //err.should.match( /(00000000000000000000005a)/igm );
-
-                    done();
-
-                }
-            );
+            } );
 
         } );
 
