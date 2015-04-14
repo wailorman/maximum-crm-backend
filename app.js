@@ -24,7 +24,7 @@ var mongoHost;
 
 /** @namespace process.env.MONGO_HOST */
 if (process.env.MONGO_HOST) {
-    mongoHost = 'mongodb://' + process.env.MONGO_HOST + '/maximum-crm';
+    mongoHost = 'mongodb://' + process.env.MONGO_HOST;
 } else {
     mongoHost = 'mongodb://localhost/maximum-crm';
 }
