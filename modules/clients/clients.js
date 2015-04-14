@@ -127,10 +127,10 @@ var validateConsists = function ( consistsArray, next ) {
         function ( groupStrId, ecb ) {
 
             // check duplicate id
-            if ( consistsMirror.find( groupStrId ) ) {
+            if ( consistsMirror.find( groupStrId.toString() ) ) {
                 return ecb( new restify.InvalidArgumentError( "Group id duplicate in consists field" ) );
             } else {
-                consistsMirror.push( groupStrId );
+                consistsMirror.push( groupStrId.toString() );
             }
 
 
