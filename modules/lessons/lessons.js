@@ -4,7 +4,10 @@ var restify     = require( 'restify' ),
     sugar       = require( 'sugar' ),
     ObjectId    = mongoose.Types.ObjectId,
 
-    LessonModel = require( '../../models/lesson.js' );
+    LessonModel = require( '../../models/lesson.js' ),
+    GroupModel = require( '../../models/group.js' ),
+    HallModel = require( '../../models/hall.js' ),
+    CoachModel = require( '../../models/coach.js' );
 
 // @todo /lessons/:id/participants
 
@@ -181,6 +184,20 @@ var deleteLessonRoute = function ( req, res, next ) {
 
 var validateData = function ( data, next ) {
 
+    var checkExistent = function ( Model, id, next ) {
+
+        Model.findById( new ObjectId( id ), function ( err, doc ) {
+
+            if ( err ) return next( new restify.InternalError( 'Mongo read: ' + err ) );
+
+            if ( ! doc ) return next( new restify.InvalidArgumentError( "Can't find " + id + " in " + Model.collection ) );
+
+            return next();
+
+        } )
+
+    };
+
     async.parallel(
         [
             // time
@@ -197,6 +214,71 @@ var validateData = function ( data, next ) {
                     return pcb( new restify.InvalidArgumentError( "Invalid lesson time" ) );
 
                 pcb();
+
+            },
+
+            // duplication
+            function ( pcb ) {
+
+                var uniqueGroups = Array.create( data.groups ).unique();
+                var uniqueCoaches = Array.create( data.coaches ).unique();
+                var uniqueHalls = Array.create( data.halls ).unique();
+
+                if ( data.groups && uniqueGroups.length !== data.groups.length )
+                    return pcb( new restify.InvalidArgumentError( "Groups duplication" ) );
+
+                if ( data.coaches && uniqueCoaches.length !== data.coaches.length )
+                    return pcb( new restify.InvalidArgumentError( "Coaches duplication" ) );
+
+                if ( data.halls && uniqueHalls.length !== data.halls.length )
+                    return pcb( new restify.InvalidArgumentError( "Halls duplication" ) );
+
+                pcb();
+
+            },
+
+            // existent. groups
+            function ( pcb ) {
+
+                if ( ! data.groups ) return pcb();
+
+                async.each(
+                    data.groups,
+                    function ( group, ecb ) {
+                        checkExistent( GroupModel, group, ecb );
+                    },
+                    pcb
+                );
+
+            },
+
+            // existent. coaches
+            function ( pcb ) {
+
+                if ( ! data.coaches ) return pcb();
+
+                async.each(
+                    data.coaches,
+                    function ( coach, ecb ) {
+                        checkExistent( CoachModel, coach, ecb );
+                    },
+                    pcb
+                );
+
+            },
+
+            // existent. halls
+            function ( pcb ) {
+
+                if ( ! data.halls ) return pcb();
+
+                async.each(
+                    data.halls,
+                    function ( hall, ecb ) {
+                        checkExistent( HallModel, hall, ecb );
+                    },
+                    pcb
+                );
 
             }
         ],
