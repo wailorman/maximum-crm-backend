@@ -436,24 +436,29 @@ describe( 'E2E Groups', function () {
 
     describe( 'Cascade remove', function () {
 
-        var cascadeTestGroupId, cascadeTestClientId;
+        var cascadeTestGroupsId = [],
+            cascadeTestClientId;
 
-        it( 'should create test group', function ( done ) {
+        it( 'should create 2 test group', function ( done ) {
 
-            restifyClient.post(
-                '/groups',
-                { name: 'Test Consists group' },
-                function ( err, req, res, data ) {
+            async.times( 2, function ( n, tcb ) {
 
-                    should.not.exist( err );
-                    data.name.should.eql( 'Test Consists group' );
+                restifyClient.post(
+                    '/groups',
+                    { name: 'Test Consists group ' + n },
+                    function ( err, req, res, data ) {
 
-                    cascadeTestGroupId = data._id;
+                        should.not.exist( err );
+                        data.name.should.eql( 'Test Consists group' );
 
-                    done();
+                        cascadeTestGroupsId.push( data._id );
 
-                }
-            );
+                        tcb();
+
+                    }
+                );
+
+            }, done );
 
         } );
 
@@ -463,7 +468,7 @@ describe( 'E2E Groups', function () {
                 '/clients',
                 {
                     name: 'Test Consists client',
-                    consists: [ cascadeTestGroupId ]
+                    consists: cascadeTestGroupsId
                 },
                 function ( err, req, res, data ) {
 
@@ -479,10 +484,10 @@ describe( 'E2E Groups', function () {
 
         } );
 
-        it( 'should delete test group', function ( done ) {
+        it( 'should delete first test group', function ( done ) {
 
             restifyClient.del(
-                '/groups/' + cascadeTestGroupId,
+                '/groups/' + cascadeTestGroupsId[ 0 ],
                 function ( err ) {
 
                     should.not.exist( err );
@@ -493,7 +498,7 @@ describe( 'E2E Groups', function () {
 
         } );
 
-        it( 'client.consists should not contains removed group', function ( done ) {
+        it( 'client should consists only in second test group', function ( done ) {
 
             restifyClient.get(
                 '/clients/' + cascadeTestClientId,
@@ -501,7 +506,7 @@ describe( 'E2E Groups', function () {
 
                     should.not.exist( err );
 
-                    data.consists.should.eql( [] );
+                    data.consists.should.eql( [ cascadeTestGroupsId[ 1 ] ] );
 
                     done();
 
