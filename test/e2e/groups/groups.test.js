@@ -449,7 +449,6 @@ describe( 'E2E Groups', function () {
                     function ( err, req, res, data ) {
 
                         should.not.exist( err );
-                        data.name.should.eql( 'Test Consists group' );
 
                         cascadeTestGroupsId.push( data._id );
 
