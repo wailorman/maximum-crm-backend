@@ -164,7 +164,7 @@ var putGroupRoute = function ( req, res, next ) {
 
             // start merging changes
 
-            Object.merge( group, req.body );
+            Object.merge( group, req.body, true );
 
             group.increment();
             group.save( function ( err, group ) {

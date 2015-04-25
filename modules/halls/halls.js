@@ -118,7 +118,7 @@ var putHallRoute = function ( req, res, next ) {
 
             // start merging changes
 
-            Object.merge( hall, req.body );
+            Object.merge( hall, req.body, true );
 
             hall.increment();
             hall.save( function ( err, hall ) {

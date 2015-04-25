@@ -195,7 +195,7 @@ var putClientRoute = function ( req, res, next ) {
                 // merge changes and save
                 function ( scb ) {
 
-                    Object.merge( client, req.body );
+                    Object.merge( client, req.body, true );
 
                     client.increment();
                     client.save( function ( err, client ) {
