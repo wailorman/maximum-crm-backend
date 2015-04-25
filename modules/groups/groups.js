@@ -1,10 +1,11 @@
-var restify    = require( 'restify' ),
-    mongoose   = require( 'mongoose' ),
-    async      = require( 'async' ),
-    sugar      = require( 'sugar' ),
-    ObjectId     = mongoose.Types.ObjectId,
+var restify     = require( 'restify' ),
+    mongoose    = require( 'mongoose' ),
+    async       = require( 'async' ),
+    sugar       = require( 'sugar' ),
+    ObjectId    = mongoose.Types.ObjectId,
 
-    GroupModel = require( '../../models/group.js' );
+    GroupModel  = require( '../../models/group.js' ),
+    ClientModel = require( '../../models/client.js' );
 
 // @todo /groups/:id/members
 
@@ -52,9 +53,9 @@ var getGroupsRoute = function ( req, res, next ) {
 
 var createGroupRoute = function ( req, res, next ) {
 
-    var newGroupDocument = new GroupModel({
+    var newGroupDocument = new GroupModel( {
         name: req.params.name
-    });
+    } );
 
     newGroupDocument.save( function ( err, doc ) {
 
@@ -84,20 +85,60 @@ var deleteGroupRoute = function ( req, res, next ) {
 
             if ( !doc ) return next( new restify.ResourceNotFoundError( "Can't find group with such id" ) );
 
-            doc.remove( function ( err ) {
+            var groupIdToRemove = req.params.id;
 
-                if ( err ) return next( new restify.InternalError( "Mongo remove: " + err.message ) );
+            async.series(
+                [
+                    // Find Clients consists in this Group
+                    function ( scb ) {
 
-                res.send( 200, 'Group was deleted!' );
-                return next();
+                        ClientModel.find( { consists: doc._id }, function ( err, docs ) {
 
-            } );
+                            if ( err ) return scb( new restify.InternalError( "Mongo find clients consists this group: " + err ) );
+
+                            if ( !docs ) return scb();
+
+                            async.each(
+                                docs,
+                                function ( client, ecb ) {
+                                    /** @namespace client.$save */
+                                    client.consists.remove( groupIdToRemove );
+                                    client.save( function ( err ) {
+                                        if ( err ) return ecb( new restify.InternalError( "Mongo save consists: " + err ) );
+                                        ecb();
+                                    } );
+                                },
+                                scb
+                            );
+
+                        } );
+
+                    },
+
+                    // Remove Group
+                    function ( scb ) {
+
+                        doc.remove( function ( err ) {
+
+                            if ( err ) return scb( new restify.InternalError( "Mongo remove: " + err ) );
+
+                            res.send( 200, 'Group was deleted!' );
+                            return scb();
+
+                        } );
+
+                    }
+                ],
+                next
+            );
 
         } );
 
 };
 
 var putGroupRoute = function ( req, res, next ) {
+    /** @namespace req.body.__v */
+
 
     try {
         var id = new ObjectId( req.params.id );
@@ -119,7 +160,7 @@ var putGroupRoute = function ( req, res, next ) {
 
             if ( err ) return next( err );
 
-            if ( ! group ) return next( new restify.ResourceNotFoundError( "Can't find group with such id" ) );
+            if ( !group ) return next( new restify.ResourceNotFoundError( "Can't find group with such id" ) );
 
             // start merging changes
 

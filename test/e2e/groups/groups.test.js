@@ -434,4 +434,86 @@ describe( 'E2E Groups', function () {
 
     } );
 
+    describe( 'Cascade remove', function () {
+
+        var cascadeTestGroupsId = [],
+            cascadeTestClientId;
+
+        it( 'should create 2 test group', function ( done ) {
+
+            async.times( 2, function ( n, tcb ) {
+
+                restifyClient.post(
+                    '/groups',
+                    { name: 'Test Consists group ' + n },
+                    function ( err, req, res, data ) {
+
+                        should.not.exist( err );
+
+                        cascadeTestGroupsId.push( data._id );
+
+                        tcb();
+
+                    }
+                );
+
+            }, done );
+
+        } );
+
+        it( 'should create Client consists in the test group', function ( done ) {
+
+            restifyClient.post(
+                '/clients',
+                {
+                    name: 'Test Consists client',
+                    consists: cascadeTestGroupsId
+                },
+                function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+                    data.name.should.eql( 'Test Consists client' );
+
+                    cascadeTestClientId = data._id;
+
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'should delete first test group', function ( done ) {
+
+            restifyClient.del(
+                '/groups/' + cascadeTestGroupsId[ 0 ],
+                function ( err ) {
+
+                    should.not.exist( err );
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'client should consists only in second test group', function ( done ) {
+
+            restifyClient.get(
+                '/clients/' + cascadeTestClientId,
+                function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+
+                    data.consists.should.eql( [ cascadeTestGroupsId[ 1 ] ] );
+
+                    done();
+
+                }
+            );
+
+        } );
+
+    } );
+
 } );
