@@ -434,4 +434,82 @@ describe( 'E2E Groups', function () {
 
     } );
 
+    describe( 'Cascade remove', function () {
+
+        var cascadeTestGroupId, cascadeTestClientId;
+
+        it( 'should create test group', function ( done ) {
+
+            restifyClient.post(
+                '/groups',
+                { name: 'Test Consists group' },
+                function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+                    data.name.should.eql( 'Test Consists group' );
+
+                    cascadeTestGroupId = data._id;
+
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'should create Client consists in the test group', function ( done ) {
+
+            restifyClient.post(
+                '/clients',
+                {
+                    name: 'Test Consists client',
+                    consists: [ cascadeTestGroupId ]
+                },
+                function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+                    data.name.should.eql( 'Test Consists client' );
+
+                    cascadeTestClientId = data._id;
+
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'should delete test group', function ( done ) {
+
+            restifyClient.del(
+                '/groups/' + cascadeTestGroupId,
+                function ( err ) {
+
+                    should.not.exist( err );
+                    done();
+
+                }
+            );
+
+        } );
+
+        it( 'client.consists should not contains removed group', function ( done ) {
+
+            restifyClient.get(
+                '/clients/' + cascadeTestClientId,
+                function ( err, req, res, data ) {
+
+                    should.not.exist( err );
+
+                    data.consists.should.eql( [] );
+
+                    done();
+
+                }
+            );
+
+        } );
+
+    } );
+
 } );
