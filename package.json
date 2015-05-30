@@ -12,5 +12,9 @@
   "devDependencies": {
     "mocha": "^2.0.1",
     "should": "^4.2.1"
+  },
+  "scripts": {
+    "start": "node app.js &",
+    "test": "node ./node_modules/mocha/bin/mocha --recursive ./test/"
   }
 }
