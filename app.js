@@ -9,13 +9,10 @@ var restify = require( 'restify' ),
     lessonsModule = require( './modules/lessons/lessons.js' );
 
 
-/** @namespace process.env.MONGO_HOST */
-/** @namespace process.env.MONGO_DBNAME */
-/** @namespace process.env.APP_PORT */
-var mongoHost = process.env.MONGO_HOST || 'localhost',
-    mongoDb = process.env.MONGO_DBNAME || 'maximum-crm',
-    appPort = process.env.APP_PORT || 21080,
-    dbURI = 'mongodb://' + mongoHost + '/' + mongoDb;
+/** @namespace process.env.MAXCRM_DB_URI */
+/** @namespace process.env.MAXCRM_APP_PORT */
+var appPort = process.env.MAXCRM_APP_PORT || 21080,
+    dbURI = process.env.MAXCRM_DB_URI || 'mongodb://localhost/maximum-crm';
 
 
 mongoose.connect( dbURI );
