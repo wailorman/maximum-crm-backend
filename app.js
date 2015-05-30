@@ -8,30 +8,28 @@ var restify = require( 'restify' ),
     groupsModule = require( './modules/groups/groups.js' ),
     lessonsModule = require( './modules/lessons/lessons.js' );
 
-/*
 
- #!/bin/bash
+/** @namespace process.env.MAXCRM_DB_URI */
+/** @namespace process.env.MAXCRM_APP_PORT */
+var appPort = process.env.MAXCRM_APP_PORT || 21080,
+    dbURI = process.env.MAXCRM_DB_URI || 'mongodb://localhost/maximum-crm';
 
- docker pull wailorman/snailkick-chat-backend:dev
 
- docker kill snail-back && docker rm snail-back
+mongoose.connect( dbURI );
 
- docker run -d --name snail-back -p 1515:1515 -e MONGO_HOST=snail:0EE49UjarK@ds037601.mongolab.com:37601 wailorman/snailkick-chat-backend:dev
+mongoose.connection.on( 'connected', function () {
+    console.log( 'Mongoose connected to ' + dbURI );
+} );
 
-* */
+// If the connection throws an error
+mongoose.connection.on( 'error', function ( err ) {
+    console.log( 'Mongoose connection error: ' + err );
+} );
 
-var mongoHost;
-
-/** @namespace process.env.MONGO_HOST */
-if (process.env.MONGO_HOST) {
-    mongoHost = 'mongodb://' + process.env.MONGO_HOST;
-} else {
-    mongoHost = 'mongodb://localhost/maximum-crm';
-}
-
-console.log( 'Connecting to MongoDB server: ' + mongoHost );
-
-mongoose.connect( mongoHost );
+// When the connection is disconnected
+mongoose.connection.on( 'disconnected', function () {
+    console.log( 'Mongoose connection disconnected' );
+} );
 
 
 server.use( restify.queryParser() );
@@ -41,7 +39,7 @@ server.use( restify.fullResponse() );
 
 server.use( function ( req, res, next ) {
 
-    res.charSet('UTF-8');
+    res.charSet( 'UTF-8' );
     return next();
 
 } );
@@ -110,8 +108,8 @@ function unknownMethodHandler( req, res ) {
 server.on( 'MethodNotAllowed', unknownMethodHandler );
 
 
-server.listen( 21080, function () {
-    console.log( 'Maximum CRM REST API server started on port 21080' );
+server.listen( appPort, function () {
+    console.log( 'Maximum CRM REST API server started on port ' + appPort );
 } );
 
 
