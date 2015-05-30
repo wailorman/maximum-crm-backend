@@ -3,12 +3,9 @@ var should = require( 'should' ),
     async = require( 'async' ),
     restify = require( 'restify' ),
     mongoose = require( 'mongoose' ),
-    LessonModel = require( '../../../models/lesson.js' );
-
-var restifyClient = restify.createJsonClient( {
-    url: 'http://localhost:21080/',
-    version: '*'
-} );
+    LessonModel = require( '../../../models/lesson.js' ),
+    testConfig = require( '../config.js' ),
+    restifyClient = testConfig.connectToApp();
 
 var tpls = {
 
@@ -26,10 +23,9 @@ var tpls = {
 
             if (expectingError) {
                 should.exist( err );
-                done();
-            }
-
-            should.not.exist( err );
+                return done();
+            } else
+                should.not.exist( err );
 
             Object.each( expectedData, function ( key, value ) {
 
@@ -57,10 +53,9 @@ var tpls = {
 
             if (expectingError) {
                 should.exist( err );
-                done();
-            }
-
-            should.not.exist( err );
+                return done();
+            } else
+                should.not.exist( err );
 
 
             /** {Array} data */
@@ -91,10 +86,10 @@ var tpls = {
 
             if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
 
             data._id.should.eql( id );
 
@@ -126,10 +121,10 @@ var tpls = {
 
             if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
 
             Object.each( expectedData, function ( key, value ) {
 
@@ -157,10 +152,10 @@ var tpls = {
 
             if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
 
             if (callback) callback( err, req, res, data );
             else done();
@@ -174,18 +169,6 @@ var tpls = {
 var cleanUp = function ( done ) {
 
     async.series( [
-
-        // check [ and establish ] mongoose connection
-        function ( scb ) {
-
-            if (!mongoose.connection.readyState) {
-                mongoose.connect( 'mongodb://localhost/maximum-crm', {}, function ( err ) {
-                    if (err) return scb( err );
-                    scb();
-                } );
-            } else scb();
-
-        },
 
         // cleanup collection
         function ( scb ) {
@@ -213,6 +196,11 @@ var generateValidDefaultData = function () {
 };
 
 describe( 'E2E Lessons', function () {
+
+    // connect to mongoose
+    before( function ( done ) {
+        testConfig.connectToDb( done );
+    } );
 
     // cleanup
     before( function ( done ) {

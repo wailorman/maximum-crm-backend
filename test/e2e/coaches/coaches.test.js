@@ -1,14 +1,11 @@
-var should     = require( 'should' ),
-    sugar      = require( 'sugar' ),
-    async      = require( 'async' ),
-    restify    = require( 'restify' ),
-    mongoose   = require( 'mongoose' ),
-    CoachModel = require( '../../../models/coach.js' );
-
-var restifyClient = restify.createJsonClient( {
-    url: 'http://localhost:21080/',
-    version: '*'
-} );
+var should = require( 'should' ),
+    sugar = require( 'sugar' ),
+    async = require( 'async' ),
+    restify = require( 'restify' ),
+    mongoose = require( 'mongoose' ),
+    CoachModel = require( '../../../models/coach.js' ),
+    testConfig = require( '../config.js' ),
+    restifyClient = testConfig.connectToApp();
 
 var postedIds = {};
 
@@ -25,12 +22,12 @@ var tpls = {
 
         restifyClient.post( '/coaches', params, function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
             should.exist( data );
 
             should.exist( data._id );
@@ -40,7 +37,7 @@ var tpls = {
 
             postedIds[ params.name ] = data._id;
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -59,18 +56,18 @@ var tpls = {
 
         restifyClient.get( '/coaches/' + id, function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
             should.exist( data );
 
             data._id.should.eql( id );
             data.name.should.eql( expectedName );
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -88,12 +85,12 @@ var tpls = {
 
         restifyClient.get( '/coaches', function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
             should.exist( data );
 
             expectedNames.each( function ( expectedName, index ) {
@@ -102,7 +99,7 @@ var tpls = {
 
             } );
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -120,17 +117,17 @@ var tpls = {
 
         restifyClient.del( '/coaches/' + id, function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
             should.exist( data );
 
             data.should.eql( 'Coach was deleted!' );
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -177,8 +174,8 @@ var tpls = {
 
                     if ( expectingError ){
                         should.exist( err );
-                        done();
-                    }else{
+                        return done();
+                    } else {
                         should.not.exist( err );
                     }
 
@@ -207,7 +204,7 @@ var tpls = {
 
                     Object.each( data, function ( field ) {
 
-                        if ( field != '_id' && field != '__v' ){
+                        if (field != '_id' && field != '__v') {
                             data[ field ].should.eql( mergeResult[ field ] );
                         }
 
@@ -221,7 +218,7 @@ var tpls = {
 
         ], function ( err ) {
 
-            if ( callback ) callback( callbackParams.err, callbackParams.req, callbackParams.res, callbackParams.data );
+            if (callback) callback( callbackParams.err, callbackParams.req, callbackParams.res, callbackParams.data );
             else done( err );
 
         } );
@@ -231,31 +228,17 @@ var tpls = {
 };
 
 var cleanUp = function ( done ) {
-
-    async.series( [
-
-        // check [ and establish ] mongoose connection
-        function ( scb ) {
-
-            if ( !mongoose.connection.readyState ) {
-                mongoose.connect( 'mongodb://mongo.local/maximum-crm', {}, function ( err ) {
-                    if ( err ) return scb( err );
-                    scb();
-                } );
-            } else scb();
-
-        },
-
-        // cleanup collection
-        function ( scb ) {
-            CoachModel.find().remove().exec( scb );
-        }
-
-    ], done );
+    CoachModel.find().remove().exec( done );
 };
 
 describe( 'E2E Coaches', function () {
 
+    // connect to mongoose
+    before( function ( done ) {
+        testConfig.connectToDb( done );
+    } );
+
+    // cleanup
     before( function ( done ) {
         cleanUp( done );
     } );
