@@ -10,8 +10,9 @@ var restify = require( 'restify' ),
 
 
 /** @namespace process.env.MAXCRM_DB_URI */
+/** @namespace process.env.PORT */
 /** @namespace process.env.MAXCRM_APP_PORT */
-var appPort = process.env.MAXCRM_APP_PORT || 21080,
+var appPort = process.env.PORT || process.env.MAXCRM_APP_PORT || 21080,
     dbURI = process.env.MAXCRM_DB_URI || 'mongodb://localhost/maximum-crm';
 
 
