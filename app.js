@@ -80,6 +80,8 @@ server.del( '/lessons/:id', lessonsModule.deleteLessonRoute );
 server.put( '/lessons/:id', lessonsModule.updateLessonRoute );
 
 server.get( '/lessons/:id/coaches', lessonsModule.getCoachesByLessonRoute );
+server.get( '/lessons/:id/halls', lessonsModule.getHallsByLessonRoute );
+server.get( '/lessons/:id/groups', lessonsModule.getGroupsByLessonRoute );
 
 function unknownMethodHandler( req, res ) {
     if (req.method.toLowerCase() === 'options') {

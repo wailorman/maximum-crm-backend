@@ -183,6 +183,9 @@ var deleteLessonRoute = function ( req, res, next ) {
 
 };
 
+
+
+
 var getLessonCoachesRoute = function ( req, res, next ) {
 
     var lessonId = req.params.id;
@@ -192,6 +195,29 @@ var getLessonCoachesRoute = function ( req, res, next ) {
             res.send( 200, objects );
         }, next );
 };
+
+var getLessonHallsRoute = function ( req, res, next ) {
+
+    var lessonId = req.params.id;
+
+    getNestedLessonObjectsByIdAndResourceName( lessonId, 'halls' )
+        .then( function ( objects ) {
+            res.send( 200, objects );
+        }, next );
+};
+
+var getLessonGroupsRoute = function ( req, res, next ) {
+
+    var lessonId = req.params.id;
+
+    getNestedLessonObjectsByIdAndResourceName( lessonId, 'groups' )
+        .then( function ( objects ) {
+            res.send( 200, objects );
+        }, next );
+};
+
+
+
 
 var getNestedLessonObjectsByIdAndResourceName = function ( lessonId, resourceName ) {
 
@@ -416,6 +442,8 @@ module.exports.createLessonRoute = createLessonRoute;
 module.exports.getOneLessonRoute = getOneLessonRoute;
 
 module.exports.getCoachesByLessonRoute = getLessonCoachesRoute;
+module.exports.getHallsByLessonRoute = getLessonHallsRoute;
+module.exports.getGroupsByLessonRoute = getLessonGroupsRoute;
 
 module.exports.getLessonsRoute = getLessonsRoute;
 module.exports.updateLessonRoute = updateLessonRoute;
