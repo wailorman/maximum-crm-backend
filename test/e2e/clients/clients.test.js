@@ -1,15 +1,12 @@
-var should      = require( 'should' ),
-    sugar       = require( 'sugar' ),
-    async       = require( 'async' ),
-    restify     = require( 'restify' ),
-    mongoose    = require( 'mongoose' ),
+var should = require( 'should' ),
+    sugar = require( 'sugar' ),
+    async = require( 'async' ),
+    restify = require( 'restify' ),
+    mongoose = require( 'mongoose' ),
     ClientModel = require( '../../../models/client.js' ),
-    GroupModel  = require( '../../../models/group.js' );
-
-var restifyClient = restify.createJsonClient( {
-    url: 'http://localhost:21080/',
-    version: '*'
-} );
+    GroupModel = require( '../../../models/group.js' ),
+    testConfig = require( '../config.js' ),
+    restifyClient = testConfig.connectToApp();
 
 var postedIds = {};
 
@@ -26,12 +23,12 @@ var tpls = {
 
         restifyClient.post( '/clients', params, function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
+                return done();
+            } else {
+                should.not.exist( err );
             }
-
-            should.not.exist( err );
             should.exist( data );
 
             should.exist( data._id );
@@ -41,7 +38,7 @@ var tpls = {
 
             postedIds[ params.name ] = data._id;
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -60,18 +57,18 @@ var tpls = {
 
         restifyClient.get( '/clients/' + id, function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
             should.exist( data );
 
             data._id.should.eql( id );
             data.name.should.eql( expectedName );
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -89,12 +86,12 @@ var tpls = {
 
         restifyClient.get( '/clients', function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
             should.exist( data );
 
             expectedNames.each( function ( expectedName, index ) {
@@ -103,7 +100,7 @@ var tpls = {
 
             } );
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -121,17 +118,17 @@ var tpls = {
 
         restifyClient.del( '/clients/' + id, function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
             should.exist( data );
 
             data.should.eql( 'Client was deleted!' );
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -176,9 +173,9 @@ var tpls = {
                         data: data
                     };
 
-                    if ( expectingError ) {
+                    if (expectingError) {
                         should.exist( err );
-                        done();
+                        return done();
                     } else {
                         should.not.exist( err );
                     }
@@ -187,7 +184,7 @@ var tpls = {
 
                     Object.each( data, function ( field ) {
 
-                        if ( field != '_id' && field != '__v' ) {
+                        if (field != '_id' && field != '__v') {
                             data[ field ].should.eql( mergeResult[ field ] );
                         }
 
@@ -208,7 +205,7 @@ var tpls = {
 
                     Object.each( data, function ( field ) {
 
-                        if ( field != '_id' && field != '__v' ) {
+                        if (field != '_id' && field != '__v') {
                             data[ field ].should.eql( mergeResult[ field ] );
                         }
 
@@ -222,7 +219,7 @@ var tpls = {
 
         ], function ( err ) {
 
-            if ( callback ) callback( callbackParams.err, callbackParams.req, callbackParams.res, callbackParams.data );
+            if (callback) callback( callbackParams.err, callbackParams.req, callbackParams.res, callbackParams.data );
             else done( err );
 
         } );
@@ -232,35 +229,20 @@ var tpls = {
 };
 
 var cleanUp = function ( done ) {
-
-    async.series( [
-
-        // check [ and establish ] mongoose connection
-        function ( scb ) {
-
-            if ( !mongoose.connection.readyState ) {
-                mongoose.connect( 'mongodb://mongo.local/maximum-crm', {}, function ( err ) {
-                    if ( err ) return scb( err );
-                    scb();
-                } );
-            } else scb();
-
-        },
-
-        // cleanup collection
-        function ( scb ) {
-
-            async.parallel( [
-                ClientModel.find().remove().exec,
-                GroupModel.find().remove().exec
-            ], scb );
-        }
-
+    async.parallel( [
+        ClientModel.find().remove().exec,
+        GroupModel.find().remove().exec
     ], done );
 };
 
 describe( 'E2E Clients', function () {
 
+    // connect to mongoose
+    before( function ( done ) {
+        testConfig.connectToDb( done );
+    } );
+
+    // cleanup
     before( function ( done ) {
         cleanUp( done );
     } );

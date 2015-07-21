@@ -1,22 +1,13 @@
-var should       = require( 'should' ),
-    restify      = require( 'restify' ),
-    mongoose     = require( 'mongoose' ),
-    async        = require( 'async' ),
-    AccountModel = require( '../../../models/account.js' );
-
-var restifyClient = restify.createJsonClient( {
-    url: 'http://localhost:21080/',
-    version: '*'
-} );
+var should = require( 'should' ),
+    restify = require( 'restify' ),
+    mongoose = require( 'mongoose' ),
+    async = require( 'async' ),
+    AccountModel = require( '../../../models/account.js' ),
+    testConfig = require( '../config.js' ),
+    restifyClient = testConfig.connectToApp();
 
 var cleanUp = function ( done ) {
-    mongoose.connect( 'mongodb://mongo.local/maximum-crm', {}, function ( err ) {
-
-        if ( err ) return done( err );
-
-        AccountModel.find().remove().exec( done );
-
-    } );
+    AccountModel.find().remove().exec( done );
 };
 
 var tpls = {
@@ -31,12 +22,11 @@ var tpls = {
 
         restifyClient.post( '/accounts', params, function ( err, req, res, data ) {
 
-            if ( doesShouldReturnError ) {
+            if (doesShouldReturnError) {
                 should.exist( err );
-                done();
-            }
-
-            should.not.exist( err );
+                return done();
+            } else
+                should.not.exist( err );
 
             data.should.eql( 'Successful register!' );
 
@@ -57,10 +47,11 @@ var tpls = {
 
         restifyClient.get( '/accounts/' + params.username + '/token?password=' + params.password, function ( err, req, res, data ) {
 
-            if ( doesShouldReturnError ) {
+            if (doesShouldReturnError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
             should.exist( data.token );
             data.token.should.type( 'string' );
@@ -82,10 +73,11 @@ var tpls = {
 
         restifyClient.get( '/accounts/' + token, function ( err, req, res, data ) {
 
-            if ( doesShouldReturnError ) {
+            if (doesShouldReturnError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
             data.name.should.eql( expectedUsername );
 
@@ -105,7 +97,17 @@ var tpls = {
 
 describe( 'E2E Accounts', function () {
 
+    // connect to mongoose
     before( function ( done ) {
+        testConfig.connectToDb( done );
+    } );
+
+    // cleanup
+    before( function ( done ) {
+        cleanUp( done );
+    } );
+
+    after( function ( done ) {
         cleanUp( done );
     } );
 

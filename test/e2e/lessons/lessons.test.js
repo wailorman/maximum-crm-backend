@@ -1,14 +1,11 @@
-var should      = require( 'should' ),
-    sugar       = require( 'sugar' ),
-    async       = require( 'async' ),
-    restify     = require( 'restify' ),
-    mongoose    = require( 'mongoose' ),
-    LessonModel = require( '../../../models/lesson.js' );
-
-var restifyClient = restify.createJsonClient( {
-    url: 'http://localhost:21080/',
-    version: '*'
-} );
+var should = require( 'should' ),
+    sugar = require( 'sugar' ),
+    async = require( 'async' ),
+    restify = require( 'restify' ),
+    mongoose = require( 'mongoose' ),
+    LessonModel = require( '../../../models/lesson.js' ),
+    testConfig = require( '../config.js' ),
+    restifyClient = testConfig.connectToApp();
 
 var tpls = {
 
@@ -24,12 +21,11 @@ var tpls = {
 
         restifyClient.post( '/lessons', params, function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
-
-            should.not.exist( err );
+                return done();
+            } else
+                should.not.exist( err );
 
             Object.each( expectedData, function ( key, value ) {
 
@@ -37,7 +33,7 @@ var tpls = {
 
             } );
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -55,12 +51,11 @@ var tpls = {
 
         restifyClient.get( '/lessons', function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
-
-            should.not.exist( err );
+                return done();
+            } else
+                should.not.exist( err );
 
 
             /** {Array} data */
@@ -70,7 +65,7 @@ var tpls = {
 
             } );
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -89,12 +84,12 @@ var tpls = {
 
         restifyClient.get( '/lessons/' + id, function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
 
             data._id.should.eql( id );
 
@@ -104,7 +99,7 @@ var tpls = {
 
             } );
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -124,12 +119,12 @@ var tpls = {
 
         restifyClient.put( '/lessons/' + id, params, function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
 
             Object.each( expectedData, function ( key, value ) {
 
@@ -137,7 +132,7 @@ var tpls = {
 
             } );
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -155,14 +150,14 @@ var tpls = {
 
         restifyClient.del( '/lessons/' + id, function ( err, req, res, data ) {
 
-            if ( expectingError ) {
+            if (expectingError) {
                 should.exist( err );
-                done();
-            }
+                return done();
+            } else
+                should.not.exist( err );
 
-            should.not.exist( err );
 
-            if ( callback ) callback( err, req, res, data );
+            if (callback) callback( err, req, res, data );
             else done();
 
         } );
@@ -175,18 +170,6 @@ var cleanUp = function ( done ) {
 
     async.series( [
 
-        // check [ and establish ] mongoose connection
-        function ( scb ) {
-
-            if ( !mongoose.connection.readyState ) {
-                mongoose.connect( 'mongodb://localhost/maximum-crm', {}, function ( err ) {
-                    if ( err ) return scb( err );
-                    scb();
-                } );
-            } else scb();
-
-        },
-
         // cleanup collection
         function ( scb ) {
             LessonModel.find().remove().exec( scb );
@@ -198,9 +181,26 @@ var cleanUp = function ( done ) {
 
 var coachIdsForTesting = [],
     groupIdsForTesting = [],
-    hallIdsForTesting  = [];
+    hallIdsForTesting = [];
+
+var generateValidDefaultData = function () {
+    return {
+        groups: [ groupIdsForTesting[ 0 ], groupIdsForTesting[ 1 ] ],
+        coaches: [ coachIdsForTesting[ 0 ], coachIdsForTesting[ 1 ] ],
+        halls: [ hallIdsForTesting[ 0 ], hallIdsForTesting[ 1 ] ],
+        time: {
+            start: (new Date( "2015-02-19" )).toISOString(),
+            end: (new Date( (new Date( "2015-02-19" )).setHours( 10 ) ) ).toISOString()
+        }
+    };
+};
 
 describe( 'E2E Lessons', function () {
+
+    // connect to mongoose
+    before( function ( done ) {
+        testConfig.connectToDb( done );
+    } );
 
     // cleanup
     before( function ( done ) {
@@ -346,7 +346,151 @@ describe( 'E2E Lessons', function () {
 
     } );
 
-    it( 'should create lesson with full data e.g. halls', function ( done ) {
+    describe( 'should not create without', function () {
+
+        it( 'groups', function ( done ) {
+
+            var data = generateValidDefaultData();
+            delete data.groups;
+
+            tpls.post(
+                data,
+                {},
+                true,
+                done
+            );
+
+        } );
+
+        it( 'coaches', function ( done ) {
+
+            var data = generateValidDefaultData();
+            delete data.coaches;
+
+            tpls.post(
+                data,
+                {},
+                true,
+                done
+            );
+
+        } );
+
+        it( 'time', function ( done ) {
+
+            var data = generateValidDefaultData();
+            delete data.time;
+
+            tpls.post(
+                data,
+                {},
+                true,
+                done
+            );
+
+        } );
+
+    } );
+
+    describe( 'should not create with duplicated', function () {
+
+        it( 'groups', function ( done ) {
+
+            var data = generateValidDefaultData();
+
+            data.groups = [ data.groups[ 0 ], data.groups[ 0 ] ];
+
+            tpls.post(
+                data,
+                {},
+                true,
+                done
+            );
+
+        } );
+
+        it( 'coaches', function ( done ) {
+
+            var data = generateValidDefaultData();
+
+            data.coaches = [ data.coaches[ 0 ], data.coaches[ 0 ] ];
+
+            tpls.post(
+                data,
+                {},
+                true,
+                done
+            );
+
+        } );
+
+        it( 'halls', function ( done ) {
+
+            var data = generateValidDefaultData();
+
+            data.halls = [ data.halls[ 0 ], data.halls[ 0 ] ];
+
+            tpls.post(
+                data,
+                {},
+                true,
+                done
+            );
+
+        } );
+
+    } );
+
+    describe( 'should not create with nonexistent', function () {
+
+        it( 'groups', function ( done ) {
+
+            var data = generateValidDefaultData();
+
+            data.groups.push( '000000000000000000000000' );
+
+            tpls.post(
+                data,
+                {},
+                true,
+                done
+            );
+
+        } );
+
+        it( 'coaches', function ( done ) {
+
+            var data = generateValidDefaultData();
+
+            data.coaches.push( '000000000000000000000000' );
+
+            tpls.post(
+                data,
+                {},
+                true,
+                done
+            );
+
+        } );
+
+        it( 'halls', function ( done ) {
+
+            var data = generateValidDefaultData();
+
+            data.halls.push( '000000000000000000000000' );
+
+            tpls.post(
+                data,
+                {},
+                true,
+                done
+            );
+
+        } );
+
+    } );
+
+    it( 'should create lesson with full data e.t. halls', function ( done ) {
 
         tpls.post(
             {
@@ -497,7 +641,7 @@ describe( 'E2E Lessons', function () {
 
     } );
 
-    it( 'should not set invalid time', function ( done ) {
+    it( 'end time could not be earlier than start', function ( done ) {
 
         tpls.put(
             createdLessons[ 0 ],
