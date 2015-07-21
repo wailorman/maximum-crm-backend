@@ -3,6 +3,7 @@ var restify     = require( 'restify' ),
     async       = require( 'async' ),
     sugar       = require( 'sugar' ),
     ObjectId    = mongoose.Types.ObjectId,
+    Q = require( 'q' ),
 
     LessonModel = require( '../../models/lesson.js' ),
     GroupModel = require( '../../models/group.js' ),
@@ -182,6 +183,130 @@ var deleteLessonRoute = function ( req, res, next ) {
 
 };
 
+var getLessonCoachesRoute = function ( req, res, next ) {
+
+    var lessonId = req.params.id;
+
+    getNestedLessonObjectsByIdAndResourceName( lessonId, 'coaches' )
+        .then( function ( objects ) {
+            res.send( 200, objects );
+        }, next );
+};
+
+var getNestedLessonObjectsByIdAndResourceName = function ( lessonId, resourceName ) {
+
+    var lessonObjectId,
+        deferred = Q.defer();
+
+    try {
+        lessonObjectId = new ObjectId( lessonId );
+    } catch ( e ) {
+        return deferred.reject( new Error( 'Invalid lesson id: ' + e.message ) );
+    }
+
+    if ( !resourceName.match( /(coaches|halls|groups)/ ) )
+        throw new Error( 'Invalid resourceName: ' + resourceName );
+
+    // getting lesson document
+    LessonModel
+        .findById( lessonObjectId )
+        .exec( function ( err, lessonDocument ) {
+
+            if ( err ) return deferred.reject( err );
+
+            if ( !lessonDocument ) return deferred.reject( new restify.ResourceNotFoundError( 'Can not find lesson with such id' ) );
+
+            getObjectsByDocAndResourceName( lessonDocument, resourceName )
+                .then( deferred.resolve, deferred.reject );
+
+        } );
+
+    return deferred.promise;
+
+};
+
+/**
+ *
+ * @param {Document} document
+ * @param {string} resourceName coaches | halls | groups
+ *
+ * @return {IPromise|*}
+ * resolve( docs ) on success
+ * reject( {Error}|{ValidationError} )
+ */
+var getObjectsByDocAndResourceName = function ( document, resourceName ) {
+
+    var convertArrayOfStringIdsToObjectIds = function ( array ) {
+
+        for ( var i = 0; array[i]; i++ ) {
+
+            try {
+                array[i] = new ObjectId( array[i] );
+            } catch ( e ) {
+                throw new Error( '#' + i + ' id of passed is not valid (' + String( array[i] ) + ')' );
+            }
+        }
+
+        return array;
+
+    };
+
+    var getModelByString = function ( str ) {
+        switch ( str ) {
+            case 'coaches':
+                return CoachModel;
+            case 'halls':
+                return HallModel;
+            case 'groups':
+                return GroupModel;
+            default:
+                throw new Error( 'Invalid resourceName string' );
+        }
+    };
+
+    var generateMongoQueryByArrayOfIds = function ( arrayOfIds ) {
+
+        var resultObject = { $or: [] };
+
+        arrayOfIds.forEach( function ( id ) {
+
+            resultObject.$or.push( { _id: id } );
+
+        } );
+
+        return resultObject;
+
+    };
+
+    //////////////////////////////////////////////////////////////////////
+
+    var ModelOfNestedResource = getModelByString( resourceName );
+    var convertedIds;
+    var deferred = Q.defer();
+
+    //////////////////////////////////////////////////////////////////////
+
+    // converting ids to local format
+    try {
+        convertedIds = convertArrayOfStringIdsToObjectIds( document[resourceName] );
+    } catch ( e ) {
+        return deferred.reject( e );
+    }
+
+    ModelOfNestedResource
+        .find( generateMongoQueryByArrayOfIds( convertedIds ) )
+        .exec( function ( err, docs ) {
+
+            if ( err ) return deferred.reject( err );
+
+            deferred.resolve( docs );
+
+        } );
+
+    return deferred.promise;
+
+};
+
 var validateData = function ( data, next ) {
 
     var checkExistent = function ( Model, id, next ) {
@@ -289,6 +414,9 @@ var validateData = function ( data, next ) {
 
 module.exports.createLessonRoute = createLessonRoute;
 module.exports.getOneLessonRoute = getOneLessonRoute;
+
+module.exports.getCoachesByLessonRoute = getLessonCoachesRoute;
+
 module.exports.getLessonsRoute = getLessonsRoute;
 module.exports.updateLessonRoute = updateLessonRoute;
 module.exports.deleteLessonRoute = deleteLessonRoute;

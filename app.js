@@ -79,6 +79,7 @@ server.post( '/lessons', lessonsModule.createLessonRoute );
 server.del( '/lessons/:id', lessonsModule.deleteLessonRoute );
 server.put( '/lessons/:id', lessonsModule.updateLessonRoute );
 
+server.get( '/lessons/:id/coaches', lessonsModule.getCoachesByLessonRoute );
 
 function unknownMethodHandler( req, res ) {
     if (req.method.toLowerCase() === 'options') {
